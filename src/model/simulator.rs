@@ -22,20 +22,4 @@ impl Simulator {
             configuration,
         }
     }
-
-    pub fn id(&self) -> Option<&ObjectId> {
-        self.id.as_ref()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn image_id(&self) -> &ObjectId {
-        &self.image_id
-    }
-
-    pub fn configuration(&self) -> &HashMap<String, String> {
-        &self.configuration
-    }
 }

@@ -10,12 +10,4 @@ impl Command {
     pub fn new(name: String, description: String) -> Self {
         Self { name, description }
     }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn description(&self) -> &str {
-        &self.description
-    }
 }

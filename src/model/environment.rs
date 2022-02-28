@@ -11,25 +11,3 @@ pub struct Environment {
     name: String,
     simulators: Vec<Simulator>,
 }
-
-impl Environment {
-    pub fn new(name: String, simulators: Vec<Simulator>) -> Self {
-        Environment {
-            id: None,
-            name,
-            simulators,
-        }
-    }
-
-    pub fn id(&self) -> Option<&ObjectId> {
-        self.id.as_ref()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn simulators(&self) -> &Vec<Simulator> {
-        &self.simulators
-    }
-}

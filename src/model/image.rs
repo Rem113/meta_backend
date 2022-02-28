@@ -22,16 +22,4 @@ impl Image {
             commands,
         }
     }
-
-    pub fn id(&self) -> Option<&ObjectId> {
-        self.id.as_ref()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn version(&self) -> &str {
-        &self.version
-    }
 }

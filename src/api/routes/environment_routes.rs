@@ -1,15 +1,15 @@
+use std::convert::Infallible;
 use std::sync::Arc;
 
 use mongodb::Database;
 use warp::Filter;
 
-use crate::api::middlewares;
 use crate::data::EnvironmentRepository;
 
 pub fn environment_routes(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    let common = warp::path("environments").and(middlewares::with_database(database));
+    let common = warp::path("environments").and(with_repository(database));
 
     common
         .and(warp::get())
@@ -17,8 +17,16 @@ pub fn environment_routes(
         .and_then(list_handler)
 }
 
-async fn list_handler(database: Arc<Database>) -> Result<warp::reply::Json, warp::Rejection> {
-    let environments = EnvironmentRepository::list(database.as_ref()).await?;
+fn with_repository(
+    database: Arc<Database>,
+) -> impl Filter<Extract = (EnvironmentRepository,), Error = Infallible> + Clone {
+    warp::any().map(move || EnvironmentRepository::new(database.clone().as_ref()))
+}
+
+async fn list_handler(
+    repository: EnvironmentRepository,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    let environments = repository.list().await?;
 
     Ok(warp::reply::json(&environments))
 }

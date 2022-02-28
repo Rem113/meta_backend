@@ -7,7 +7,6 @@ use crate::api::routes::{environment_routes, images_routes, simulators_routes};
 
 mod error;
 mod error_rejection;
-mod middlewares;
 mod routes;
 
 pub fn routes(

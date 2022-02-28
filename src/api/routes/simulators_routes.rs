@@ -1,15 +1,15 @@
+use std::convert::Infallible;
 use std::sync::Arc;
 
 use mongodb::Database;
 use warp::Filter;
 
-use crate::api::middlewares;
 use crate::data::SimulatorRepository;
 
 pub fn simulators_routes(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (impl warp::reply::Reply,), Error = warp::Rejection> + Clone {
-    let common = warp::path("simulators").and(middlewares::with_database(database));
+    let common = warp::path("simulators").and(with_repository(database));
 
     common
         .and(warp::get())
@@ -17,8 +17,16 @@ pub fn simulators_routes(
         .and_then(list_handler)
 }
 
-async fn list_handler(database: Arc<Database>) -> Result<warp::reply::Json, warp::Rejection> {
-    let simulators = SimulatorRepository::list(database.as_ref()).await?;
+fn with_repository(
+    database: Arc<Database>,
+) -> impl Filter<Extract = (SimulatorRepository,), Error = Infallible> + Clone {
+    warp::any().map(move || SimulatorRepository::new(database.clone().as_ref()))
+}
+
+async fn list_handler(
+    repository: SimulatorRepository,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    let simulators = repository.list().await?;
 
     Ok(warp::reply::json(&simulators))
 }

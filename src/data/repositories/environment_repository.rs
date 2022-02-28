@@ -1,14 +1,21 @@
 use futures::TryStreamExt;
-use mongodb::Database;
+use mongodb::{Collection, Database};
 
 use crate::data::{Environment, Error};
 
-pub struct EnvironmentRepository {}
+pub struct EnvironmentRepository {
+    environments: Collection<Environment>,
+}
 
 impl EnvironmentRepository {
-    pub async fn list(database: &Database) -> Result<Vec<Environment>, Error> {
-        let collection = database.collection("Environments");
-        let cursor = collection.find(None, None).await?;
+    pub fn new(database: &Database) -> Self {
+        Self {
+            environments: database.collection("Environments"),
+        }
+    }
+
+    pub async fn list(&self) -> Result<Vec<Environment>, Error> {
+        let cursor = self.environments.find(None, None).await?;
 
         let result = cursor.try_collect().await?;
 

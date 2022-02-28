@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
 use mongodb::Database;
 
-use crate::model::Error;
+use crate::data::Error;
 use crate::Simulator;
 
 pub struct SimulatorRepository {}

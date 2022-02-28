@@ -4,7 +4,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::middlewares;
-use crate::model::EnvironmentRepository;
+use crate::data::EnvironmentRepository;
 
 pub fn environment_routes(
     database: Arc<Database>,

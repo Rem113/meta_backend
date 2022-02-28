@@ -4,7 +4,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::middlewares;
-use crate::model::SimulatorRepository;
+use crate::data::SimulatorRepository;
 
 pub fn simulators_routes(
     database: Arc<Database>,

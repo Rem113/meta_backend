@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
 use mongodb::Database;
 
-use crate::model::{Environment, Error};
+use crate::data::{Environment, Error};
 
 pub struct EnvironmentRepository {}
 

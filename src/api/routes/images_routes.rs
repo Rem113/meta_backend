@@ -4,7 +4,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::middlewares;
-use crate::model::ImageRepository;
+use crate::data::ImageRepository;
 
 pub fn images_routes(
     database: Arc<Database>,

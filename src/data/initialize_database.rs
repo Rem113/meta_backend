@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
 
-use crate::model::{Environment, Error};
+use crate::data::{Environment, Error};
 use crate::{Command, Image, Simulator};
 
 pub async fn initialize_database() -> Result<Database, Error> {

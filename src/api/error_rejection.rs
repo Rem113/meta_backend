@@ -1,5 +1,5 @@
 use crate::api::error::Error;
-use crate::model;
+use crate::data;
 
 #[derive(Debug)]
 pub struct ErrorRejection(String);
@@ -18,8 +18,8 @@ impl From<Error> for warp::Rejection {
     }
 }
 
-impl From<model::Error> for warp::Rejection {
-    fn from(other: model::Error) -> Self {
+impl From<data::Error> for warp::Rejection {
+    fn from(other: data::Error) -> Self {
         ErrorRejection::reject(&other.to_string())
     }
 }

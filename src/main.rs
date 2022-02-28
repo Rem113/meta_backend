@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use warp::Filter;
 
-use crate::model::{initialize_database, Command, Image, Simulator};
+use crate::data::{initialize_database, Command, Image, Simulator};
 
 mod api;
-mod model;
+mod data;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

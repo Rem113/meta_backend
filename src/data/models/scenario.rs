@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::model::Step;
+use crate::data::Step;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Scenario {

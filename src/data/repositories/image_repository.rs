@@ -1,8 +1,8 @@
 use futures::TryStreamExt;
 use mongodb::Database;
 
-use crate::model::Error;
-use crate::model::Image;
+use crate::data::Error;
+use crate::data::Image;
 
 pub struct ImageRepository {}
 

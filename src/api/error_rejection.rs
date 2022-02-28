@@ -1,14 +1,24 @@
 use crate::api::error::Error;
 use crate::data;
 
-#[derive(Debug)]
-pub struct ErrorRejection(String);
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+pub struct ErrorRejection {
+    message: String,
+}
 
 impl warp::reject::Reject for ErrorRejection {}
 
 impl ErrorRejection {
+    pub fn from(error: &str) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+
     pub fn reject(error: &str) -> warp::Rejection {
-        warp::reject::custom(ErrorRejection(error.to_string()))
+        warp::reject::custom(ErrorRejection::from(error))
     }
 }
 

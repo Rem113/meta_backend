@@ -5,6 +5,7 @@ pub use image::Image;
 pub use initialize_database::initialize_database;
 pub use repositories::EnvironmentRepository;
 pub use repositories::ImageRepository;
+pub use repositories::SimulatorRepository;
 pub use scenario::Scenario;
 pub use simulator::Simulator;
 pub use step::Step;

@@ -11,9 +11,9 @@ pub fn environment_routes(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     let common = warp::path("environments").and(middlewares::with_database(database));
 
-    warp::get()
+    common
+        .and(warp::get())
         .and(warp::path::end())
-        .and(common)
         .and_then(list_handler)
 }
 

@@ -3,13 +3,13 @@ use std::sync::Arc;
 use mongodb::Database;
 use warp::Filter;
 
-use crate::api::middlewares::with_database;
+use crate::api::middlewares;
 use crate::model::ImageRepository;
 
 pub fn images_routes(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    let common = warp::path("images").and(with_database(database));
+    let common = warp::path("images").and(middlewares::with_database(database));
 
     common
         .and(warp::get())

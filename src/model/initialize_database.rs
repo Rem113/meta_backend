@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
 
-use crate::model::Error;
+use crate::model::{Environment, Error};
 use crate::{Command, Image, Simulator};
 
 pub async fn initialize_database() -> Result<Database, Error> {
@@ -24,7 +24,8 @@ async fn format_database(database: &Database) -> Result<(), Error> {
 
 async fn populate_database(database: &Database) -> Result<(), Error> {
     let image_id = initialize_images(database).await?;
-    initialize_simulators(database, image_id).await?;
+    let simulator_id = initialize_simulators(database, image_id).await?;
+    initialize_environments(database, simulator_id).await?;
 
     Ok(())
 }
@@ -57,7 +58,7 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
         .expect("Failed to get ObjectId for image"))
 }
 
-async fn initialize_simulators(database: &Database, image_id: ObjectId) -> Result<(), Error> {
+async fn initialize_simulators(database: &Database, image_id: ObjectId) -> Result<ObjectId, Error> {
     let simulators = database.collection("Simulators");
 
     let simulator = Simulator::new(
@@ -69,7 +70,20 @@ async fn initialize_simulators(database: &Database, image_id: ObjectId) -> Resul
         )]),
     );
 
-    simulators.insert_one(simulator, None).await?;
+    let result = simulators.insert_one(simulator, None).await?;
+
+    Ok(result
+        .inserted_id
+        .as_object_id()
+        .expect("Failed to get ObjectId for simulator"))
+}
+
+async fn initialize_environments(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
+    let environments = database.collection("Environments");
+
+    let environment = Environment::new(String::from("dev"), vec![simulator_id]);
+
+    environments.insert_one(environment, None).await?;
 
     Ok(())
 }

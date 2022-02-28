@@ -3,8 +3,8 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use mongodb::Database;
 
+use crate::model::Image;
 use crate::model::ModelError;
-use crate::Image;
 
 pub struct ImageRepository {}
 

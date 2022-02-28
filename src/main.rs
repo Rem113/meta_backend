@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::model::{init_db, Command, Image, Simulator};
 use mongodb::bson::doc;
 use warp::Filter;
-
-use crate::model::{init_db, Command, Image, Simulator};
 
 mod api;
 mod model;

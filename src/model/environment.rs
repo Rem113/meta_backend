@@ -1,6 +1,7 @@
-use crate::model::Simulator;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+
+use crate::model::Simulator;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Environment {

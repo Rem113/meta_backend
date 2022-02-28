@@ -3,17 +3,17 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use mongodb::Database;
 
+use crate::model::Error;
 use crate::model::Image;
-use crate::model::ModelError;
 
 pub struct ImageRepository {}
 
 impl ImageRepository {
-    pub async fn list(db: Arc<Database>) -> Result<Vec<Image>, ModelError> {
-        let images = db.collection("Images");
+    pub async fn list(database: Arc<Database>) -> Result<Vec<Image>, Error> {
+        let images = database.collection("Images");
         let cursor = images.find(None, None).await?;
 
-        let result: Vec<Image> = cursor.try_collect().await?;
+        let result = cursor.try_collect().await?;
 
         Ok(result)
     }

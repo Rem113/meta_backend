@@ -1,6 +1,7 @@
-use crate::model::Command;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+
+use crate::model::Command;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Image {

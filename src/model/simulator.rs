@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Simulator {

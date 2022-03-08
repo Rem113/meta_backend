@@ -31,4 +31,12 @@ impl Image {
             commands: self.commands.clone(),
         }
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
+    }
 }

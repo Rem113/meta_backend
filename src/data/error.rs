@@ -2,4 +2,6 @@
 pub enum Error {
     #[error("{0}")]
     InitializationError(#[from] mongodb::error::Error),
+    #[error("Not found")]
+    NotFound,
 }

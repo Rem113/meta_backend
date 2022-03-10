@@ -1,6 +1,6 @@
 use crate::api::error_rejection::ErrorRejection;
 use crate::data::{Image, ImageRepository};
-use bollard::image::{BuildImageOptions, ListImagesOptions};
+use bollard::image::BuildImageOptions;
 use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
@@ -41,19 +41,11 @@ pub async fn create_handler(
 
     let image = parse_part_to_image(image_data_part).await?;
 
-    let tag = format!("meta/{}:{}", image.name(), image.version());
-    let mut filters = HashMap::new();
-    filters.insert("reference", vec![tag.as_str()]);
+    let already_existing_image = repository
+        .find_by_name_and_version(image.name(), image.version())
+        .await?;
 
-    let list_images_result = docker
-        .list_images(Some(ListImagesOptions {
-            filters,
-            ..Default::default()
-        }))
-        .await
-        .map_err(|_| ErrorRejection::reject("Could not list images"))?;
-
-    if list_images_result.len() > 0 {
+    if already_existing_image.is_some() {
         return Err(ErrorRejection::reject("Image already exists"));
     }
 
@@ -70,7 +62,7 @@ pub async fn create_handler(
 
     let mut docker_build_info = docker.build_image(
         BuildImageOptions {
-            t: tag,
+            t: format!("meta/{}:{}", image.name(), image.version()),
             rm: true,
             ..Default::default()
         },

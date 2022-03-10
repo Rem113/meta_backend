@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
 
-use crate::data::{Environment, Error};
-use crate::{Command, Image, Simulator};
+use crate::data::{Command, Environment, Error, Image, Simulator};
 
 pub async fn initialize_database() -> Result<Database, Error> {
     let client = Client::with_uri_str("mongodb://localhost:27017").await?;

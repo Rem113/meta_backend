@@ -4,17 +4,16 @@ use std::sync::Arc;
 
 use warp::Filter;
 
-use crate::data::{initialize_database, Command, Image, Simulator};
-
 mod api;
 mod data;
+mod loaders;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let docker = bollard::Docker::connect_with_local_defaults()?;
     let docker = Arc::new(docker);
 
-    let database = initialize_database().await?;
+    let database = loaders::initialize_database().await?;
     let database = Arc::new(database);
 
     let api = warp::path("api").and(api::routes(database, docker));

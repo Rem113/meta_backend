@@ -1,8 +1,7 @@
 use futures::TryStreamExt;
 use mongodb::{Collection, Database};
 
-use crate::data::Error;
-use crate::Simulator;
+use crate::data::{Error, Simulator};
 
 pub struct SimulatorRepository {
     simulators: Collection<Simulator>,

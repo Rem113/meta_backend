@@ -2,10 +2,10 @@ use bollard::Docker;
 use std::convert::Infallible;
 use std::sync::Arc;
 
-use crate::api::handlers;
 use mongodb::Database;
 use warp::Filter;
 
+use crate::api::handlers::images_handlers;
 use crate::data::ImageRepository;
 
 pub fn images_routes(
@@ -18,15 +18,15 @@ pub fn images_routes(
         .clone()
         .and(warp::get())
         .and(warp::path::end())
-        .and_then(handlers::list_handler);
+        .and_then(images_handlers::list);
 
     let create = common
         .and(warp::post())
         .and(warp::path::end())
         .and(with_docker(docker))
         .and(warp::filters::multipart::form())
-        .and_then(handlers::create_handler)
-        .recover(handlers::rejection::create_rejection_handler);
+        .and_then(images_handlers::create)
+        .recover(images_handlers::rejection::create);
 
     list.or(create)
 }

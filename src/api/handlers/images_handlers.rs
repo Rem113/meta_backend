@@ -10,15 +10,13 @@ use std::sync::Arc;
 use warp::multipart::{FormData, Part};
 use warp::Buf;
 
-pub async fn list_handler(
-    repository: ImageRepository,
-) -> Result<warp::reply::Json, warp::Rejection> {
+pub async fn list(repository: ImageRepository) -> Result<warp::reply::Json, warp::Rejection> {
     let images = repository.list().await?;
 
     Ok(warp::reply::json(&images))
 }
 
-pub async fn create_handler(
+pub async fn create(
     repository: ImageRepository,
     docker: Arc<Docker>,
     form_data: FormData,
@@ -106,9 +104,7 @@ pub mod rejection {
     use crate::api::error_rejection::ErrorRejection;
     use warp::body;
 
-    pub async fn create_rejection_handler(
-        rejection: warp::Rejection,
-    ) -> Result<impl warp::Reply, warp::Rejection> {
+    pub async fn create(rejection: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
         if let Some(body::BodyDeserializeError { .. }) = rejection.find() {
             return Ok(warp::reply::with_status(
                 warp::reply::json(&ErrorRejection::from("Invalid body format")),

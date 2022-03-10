@@ -4,6 +4,7 @@ use std::sync::Arc;
 use mongodb::Database;
 use warp::Filter;
 
+use crate::api::handlers::simulators_handlers;
 use crate::data::SimulatorRepository;
 
 pub fn simulators_routes(
@@ -14,19 +15,11 @@ pub fn simulators_routes(
     common
         .and(warp::get())
         .and(warp::path::end())
-        .and_then(list_handler)
+        .and_then(simulators_handlers::list)
 }
 
 fn with_repository(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (SimulatorRepository,), Error = Infallible> + Clone {
     warp::any().map(move || SimulatorRepository::new(database.clone().as_ref()))
-}
-
-async fn list_handler(
-    repository: SimulatorRepository,
-) -> Result<warp::reply::Json, warp::Rejection> {
-    let simulators = repository.list().await?;
-
-    Ok(warp::reply::json(&simulators))
 }

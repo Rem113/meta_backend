@@ -10,7 +10,7 @@ mod loaders;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let docker = bollard::Docker::connect_with_local_defaults()?;
+    let docker = loaders::initialize_docker().await?;
     let docker = Arc::new(docker);
 
     let database = loaders::initialize_database().await?;

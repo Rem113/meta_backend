@@ -7,15 +7,21 @@ pub struct Environment {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<ObjectId>,
     name: String,
-    simulators_id: Vec<ObjectId>,
 }
 
 impl Environment {
-    pub fn new(name: String, simulators_id: Vec<ObjectId>) -> Environment {
+    pub fn new(name: String) -> Environment {
+        Environment { id: None, name }
+    }
+
+    pub fn with_id(&self, id: ObjectId) -> Environment {
         Environment {
-            id: None,
-            name,
-            simulators_id,
+            id: Some(id),
+            name: self.name.clone(),
         }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }

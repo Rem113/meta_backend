@@ -24,11 +24,24 @@ async fn format_database(database: &Database) -> Result<(), Error> {
 }
 
 async fn populate_database(database: &Database) -> Result<(), Error> {
+    let environment_id = initialize_environments(database).await?;
     let image_id = initialize_images(database).await?;
-    let simulator_id = initialize_simulators(database, image_id).await?;
-    initialize_environments(database, simulator_id).await?;
+    initialize_simulators(database, environment_id, image_id).await?;
 
     Ok(())
+}
+
+async fn initialize_environments(database: &Database) -> Result<ObjectId, Error> {
+    let environments = database.collection("Environments");
+
+    let environment = Environment::new(String::from("dev"));
+
+    let result = environments.insert_one(environment, None).await?;
+
+    Ok(result
+        .inserted_id
+        .as_object_id()
+        .expect("Failed to get ObjectId for environment"))
 }
 
 async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
@@ -59,11 +72,16 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
         .expect("Failed to get ObjectId for image"))
 }
 
-async fn initialize_simulators(database: &Database, image_id: ObjectId) -> Result<ObjectId, Error> {
+async fn initialize_simulators(
+    database: &Database,
+    environment_id: ObjectId,
+    image_id: ObjectId,
+) -> Result<ObjectId, Error> {
     let simulators = database.collection("Simulators");
 
     let simulator = Simulator::new(
         String::from("kafka-resolver"),
+        environment_id,
         image_id,
         HashMap::from([(
             String::from("KAFKA_HOST"),
@@ -77,14 +95,4 @@ async fn initialize_simulators(database: &Database, image_id: ObjectId) -> Resul
         .inserted_id
         .as_object_id()
         .expect("Failed to get ObjectId for simulator"))
-}
-
-async fn initialize_environments(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
-    let environments = database.collection("Environments");
-
-    let environment = Environment::new(String::from("dev"), vec![simulator_id]);
-
-    environments.insert_one(environment, None).await?;
-
-    Ok(())
 }

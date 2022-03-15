@@ -1,5 +1,5 @@
 use futures::TryStreamExt;
-use mongodb::{Collection, Database};
+use mongodb::{bson::doc, Collection, Database};
 
 use crate::data::{Environment, Error};
 
@@ -20,5 +20,20 @@ impl EnvironmentRepository {
         let result = cursor.try_collect().await?;
 
         Ok(result)
+    }
+
+    pub async fn create(&self, environment: Environment) -> Result<Environment, Error> {
+        let result = self.environments.insert_one(&environment, None).await?;
+
+        let inserted_id = result.inserted_id.as_object_id().expect("Invalid ObjectID");
+
+        Ok(environment.with_id(inserted_id))
+    }
+
+    pub async fn find_by_name(&self, name: &str) -> Result<Option<Environment>, Error> {
+        self.environments
+            .find_one(doc! {"name": name}, None)
+            .await
+            .map_err(Error::from)
     }
 }

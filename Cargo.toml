@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 bollard = "0.11.1"
 bytes = "1.1.0"
+env_logger = "0.9.0"
 futures = "0.3.21"
 mongodb = "2.1.0"
 serde = "1.0.136"

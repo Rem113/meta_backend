@@ -25,7 +25,7 @@ impl ImageRepository {
     }
 
     pub async fn create(&self, image: Image) -> Result<Image, Error> {
-        let result = self.images.insert_one(image.clone(), None).await?;
+        let result = self.images.insert_one(&image, None).await?;
 
         let inserted_id = result.inserted_id.as_object_id().expect("Invalid ObjectID");
 

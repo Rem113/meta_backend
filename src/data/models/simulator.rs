@@ -9,15 +9,22 @@ pub struct Simulator {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<ObjectId>,
     name: String,
+    environment_id: ObjectId,
     image_id: ObjectId,
     configuration: HashMap<String, String>,
 }
 
 impl Simulator {
-    pub fn new(name: String, image_id: ObjectId, configuration: HashMap<String, String>) -> Self {
+    pub fn new(
+        name: String,
+        environment_id: ObjectId,
+        image_id: ObjectId,
+        configuration: HashMap<String, String>,
+    ) -> Self {
         Self {
             id: None,
             name,
+            environment_id,
             image_id,
             configuration,
         }

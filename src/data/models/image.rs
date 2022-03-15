@@ -23,12 +23,12 @@ impl Image {
         }
     }
 
-    pub fn with_id(&self, id: ObjectId) -> Image {
+    pub fn with_id(self, id: ObjectId) -> Image {
         Self {
             id: Some(id),
-            name: self.name.clone(),
-            version: self.version.clone(),
-            commands: self.commands.clone(),
+            name: self.name,
+            version: self.version,
+            commands: self.commands,
         }
     }
 

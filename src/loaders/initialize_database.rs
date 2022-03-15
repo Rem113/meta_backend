@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
+use serde_json::json;
 
-use crate::data::{Command, Environment, Image, Simulator};
+use crate::data::{Command, Environment, Image, Scenario, Simulator, Step};
 
 use super::Error;
 
@@ -26,7 +27,8 @@ async fn format_database(database: &Database) -> Result<(), Error> {
 async fn populate_database(database: &Database) -> Result<(), Error> {
     let environment_id = initialize_environments(database).await?;
     let image_id = initialize_images(database).await?;
-    initialize_simulators(database, environment_id, image_id).await?;
+    let simulator_id = initialize_simulators(database, environment_id, image_id).await?;
+    initalize_scenarios(database, simulator_id).await?;
 
     Ok(())
 }
@@ -51,16 +53,16 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
         String::from("kafka-resolver"),
         String::from("1.0.0"),
         vec![
-            Command::new(
-                String::from("listen_to_topic"),
-                String::from(
+            Command {
+                name: String::from("listen_to_topic"),
+                description: String::from(
                     "Starts listening to a topic. Get the messages with 'get_messages_from_topic'",
                 ),
-            ),
-            Command::new(
-                String::from("get_messages_from_topic"),
-                String::from("Gets the messages sent since started listening"),
-            ),
+            },
+            Command {
+                name: String::from("get_messages_from_topic"),
+                description: String::from("Gets the messages sent since started listening"),
+            },
         ],
     );
 
@@ -95,4 +97,25 @@ async fn initialize_simulators(
         .inserted_id
         .as_object_id()
         .expect("Failed to get ObjectId for simulator"))
+}
+
+async fn initalize_scenarios(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
+    let scenarios = database.collection("Scenarios");
+
+    let scenario = Scenario::new(
+        String::from("My scenario"),
+        String::from("This is my scenario"),
+        vec![Step {
+            simulator_id,
+            command: Command {
+                name: String::from("listen_to_topic"),
+                description: String::from("Starts listening to a topic"),
+            },
+            arguments: json! ({ "topic": "my-topic.t"}),
+        }],
+    );
+
+    scenarios.insert_one(scenario, None).await?;
+
+    Ok(())
 }

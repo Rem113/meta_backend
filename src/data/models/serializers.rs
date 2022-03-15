@@ -2,14 +2,21 @@ use mongodb::bson::oid::ObjectId;
 use serde::{Serialize, Serializer};
 
 pub fn serialize_option_object_id<S>(
-    to_serialize: &Option<ObjectId>,
+    option_object_id: &Option<ObjectId>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    match to_serialize {
+    match option_object_id {
         Some(id) => id.to_string().serialize(serializer),
         None => serializer.serialize_none(),
     }
+}
+
+pub fn serialize_object_id<S>(object_id: &ObjectId, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    object_id.to_string().serialize(serializer)
 }

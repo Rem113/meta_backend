@@ -4,7 +4,7 @@ use std::sync::Arc;
 use mongodb::Database;
 use warp::Filter;
 
-use crate::api::handlers::environment_handlers;
+use crate::api::handlers::environments_handlers;
 use crate::data::EnvironmentRepository;
 
 pub fn environment_routes(
@@ -16,13 +16,13 @@ pub fn environment_routes(
         .clone()
         .and(warp::get())
         .and(warp::path::end())
-        .and_then(environment_handlers::list);
+        .and_then(environments_handlers::list);
 
     let create = common
         .and(warp::post())
         .and(warp::path::end())
         .and(warp::body::json())
-        .and_then(environment_handlers::create);
+        .and_then(environments_handlers::create);
 
     list.or(create)
 }

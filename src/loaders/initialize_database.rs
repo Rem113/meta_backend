@@ -50,20 +50,12 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
     let images = database.collection("Images");
 
     let image = Image::new(
-        String::from("kafka-resolver"),
+        String::from("test-sim"),
         String::from("1.0.0"),
-        vec![
-            Command {
-                name: String::from("listen_to_topic"),
-                description: String::from(
-                    "Starts listening to a topic. Get the messages with 'get_messages_from_topic'",
-                ),
-            },
-            Command {
-                name: String::from("get_messages_from_topic"),
-                description: String::from("Gets the messages sent since started listening"),
-            },
-        ],
+        vec![Command {
+            name: String::from("test"),
+            description: String::from("This is a test command"),
+        }],
     );
 
     let result = images.insert_one(image, None).await?;
@@ -82,13 +74,10 @@ async fn initialize_simulators(
     let simulators = database.collection("Simulators");
 
     let simulator = Simulator::new(
-        String::from("kafka-resolver"),
+        String::from("test-sim"),
         environment_id,
         image_id,
-        HashMap::from([(
-            String::from("KAFKA_HOST"),
-            String::from("kafka://host:1234"),
-        )]),
+        HashMap::new(),
     );
 
     let result = simulators.insert_one(simulator, None).await?;
@@ -108,10 +97,10 @@ async fn initalize_scenarios(database: &Database, simulator_id: ObjectId) -> Res
         vec![Step {
             simulator_id,
             command: Command {
-                name: String::from("listen_to_topic"),
-                description: String::from("Starts listening to a topic"),
+                name: String::from("test"),
+                description: String::from("This is a test command"),
             },
-            arguments: json! ({ "topic": "my-topic.t"}),
+            arguments: json!({}),
         }],
     );
 

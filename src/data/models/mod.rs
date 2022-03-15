@@ -3,6 +3,7 @@ mod environment;
 mod execution;
 mod image;
 mod scenario;
+mod serializers;
 mod simulator;
 mod step;
 

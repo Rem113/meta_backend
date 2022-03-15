@@ -1,5 +1,8 @@
 use futures::TryStreamExt;
-use mongodb::{Collection, Database};
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    Collection, Database,
+};
 
 use crate::data::{Error, Simulator};
 
@@ -16,6 +19,27 @@ impl SimulatorRepository {
 
     pub async fn list(&self) -> Result<Vec<Simulator>, Error> {
         let cursor = self.simulators.find(None, None).await?;
+
+        let result = cursor.try_collect().await?;
+
+        Ok(result)
+    }
+
+    pub async fn create(&self, simulator: Simulator) -> Result<Simulator, Error> {
+        let result = self.simulators.insert_one(&simulator, None).await?;
+
+        let inserted_id = result.inserted_id.as_object_id().expect("Invalid ObjectID");
+
+        Ok(simulator.with_id(inserted_id))
+    }
+
+    pub async fn find_by_environment(
+        &self,
+        environment_id: &ObjectId,
+    ) -> Result<Vec<Simulator>, Error> {
+        let filter = doc! {"environment_id": environment_id};
+
+        let cursor = self.simulators.find(Some(filter), None).await?;
 
         let result = cursor.try_collect().await?;
 

@@ -24,4 +24,15 @@ impl Scenario {
             steps,
         }
     }
+
+    pub fn with_id(self, id: ObjectId) -> Self {
+        Scenario {
+            id: Some(id),
+            ..self
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }

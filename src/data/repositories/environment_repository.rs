@@ -17,9 +17,7 @@ impl EnvironmentRepository {
     pub async fn list(&self) -> Result<Vec<Environment>, Error> {
         let cursor = self.environments.find(None, None).await?;
 
-        let result = cursor.try_collect().await?;
-
-        Ok(result)
+        cursor.try_collect().await.map_err(Error::from)
     }
 
     pub async fn create(&self, environment: Environment) -> Result<Environment, Error> {

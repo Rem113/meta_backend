@@ -20,9 +20,7 @@ impl SimulatorRepository {
     pub async fn list(&self) -> Result<Vec<Simulator>, Error> {
         let cursor = self.simulators.find(None, None).await?;
 
-        let result = cursor.try_collect().await?;
-
-        Ok(result)
+        cursor.try_collect().await.map_err(Error::from)
     }
 
     pub async fn create(&self, simulator: Simulator) -> Result<Simulator, Error> {
@@ -41,8 +39,6 @@ impl SimulatorRepository {
 
         let cursor = self.simulators.find(Some(filter), None).await?;
 
-        let result = cursor.try_collect().await?;
-
-        Ok(result)
+        cursor.try_collect().await.map_err(Error::from)
     }
 }

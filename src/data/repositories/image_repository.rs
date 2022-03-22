@@ -19,9 +19,7 @@ impl ImageRepository {
     pub async fn list(&self) -> Result<Vec<Image>, Error> {
         let cursor = self.images.find(None, None).await?;
 
-        let result = cursor.try_collect().await?;
-
-        Ok(result)
+        cursor.try_collect().await.map_err(Error::from)
     }
 
     pub async fn create(&self, image: Image) -> Result<Image, Error> {

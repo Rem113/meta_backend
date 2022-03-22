@@ -35,10 +35,7 @@ impl Simulator {
     pub fn with_id(self, id: ObjectId) -> Simulator {
         Self {
             id: Some(id),
-            name: self.name,
-            environment_id: self.environment_id,
-            image_id: self.image_id,
-            configuration: self.configuration,
+            ..self
         }
     }
 

@@ -28,9 +28,7 @@ impl Image {
     pub fn with_id(self, id: ObjectId) -> Image {
         Self {
             id: Some(id),
-            name: self.name,
-            version: self.version,
-            commands: self.commands,
+            ..self
         }
     }
 

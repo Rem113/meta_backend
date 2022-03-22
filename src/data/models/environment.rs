@@ -16,10 +16,10 @@ impl Environment {
         Environment { id: None, name }
     }
 
-    pub fn with_id(&self, id: ObjectId) -> Environment {
+    pub fn with_id(self, id: ObjectId) -> Environment {
         Environment {
             id: Some(id),
-            name: self.name.clone(),
+            ..self
         }
     }
 

@@ -25,12 +25,10 @@ async fn format_image_repository(docker: &Docker) -> Result<(), Error> {
         }))
         .await?;
 
-    for mut image in images {
-        let tag = image.repo_tags.pop().ok_or(Error::DockerInit(String::from(
-            "Unexpected error while cleaning Docker image repository",
-        )))?;
-
-        docker.remove_image(tag.as_str(), None, None).await?;
+    for image in images {
+        for tag in image.repo_tags {
+            docker.remove_image(tag.as_str(), None, None).await?;
+        }
     }
 
     Ok(())
@@ -43,7 +41,8 @@ async fn add_test_sim(docker: &Docker) -> Result<(), Error> {
 
     let mut build_info = docker.build_image(
         BuildImageOptions {
-            t: "test-sim:1.0.0",
+            t: "meta/test-sim:1.0.0",
+            rm: true,
             ..Default::default()
         },
         None,

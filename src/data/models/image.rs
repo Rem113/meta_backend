@@ -1,3 +1,5 @@
+use crate::data::repository::Document;
+
 use super::serializers::serialize_option_object_id;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
@@ -25,11 +27,8 @@ impl Image {
         }
     }
 
-    pub fn with_id(self, id: ObjectId) -> Image {
-        Self {
-            id: Some(id),
-            ..self
-        }
+    pub fn id(&self) -> Option<&ObjectId> {
+        self.id.as_ref()
     }
 
     pub fn name(&self) -> &str {
@@ -38,5 +37,18 @@ impl Image {
 
     pub fn version(&self) -> &str {
         &self.version
+    }
+}
+
+impl Document for Image {
+    fn collection_name() -> &'static str {
+        "Images"
+    }
+
+    fn with_id(self, id: ObjectId) -> Self {
+        Self {
+            id: Some(id),
+            ..self
+        }
     }
 }

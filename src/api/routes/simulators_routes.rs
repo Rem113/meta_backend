@@ -5,7 +5,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::handlers::simulators_handlers;
-use crate::data::SimulatorRepository;
+use crate::data::{Repository, Simulator};
 
 pub fn simulators_routes(
     database: Arc<Database>,
@@ -29,6 +29,6 @@ pub fn simulators_routes(
 
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (SimulatorRepository,), Error = Infallible> + Clone {
-    warp::any().map(move || SimulatorRepository::new(database.clone().as_ref()))
+) -> impl Filter<Extract = (Repository<Simulator>,), Error = Infallible> + Clone {
+    warp::any().map(move || Repository::new(database.clone().as_ref()))
 }

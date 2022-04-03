@@ -1,3 +1,5 @@
+use crate::data::repository::Document;
+
 use super::serializers::serialize_option_object_id;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
@@ -16,14 +18,20 @@ impl Environment {
         Environment { id: None, name }
     }
 
-    pub fn with_id(self, id: ObjectId) -> Environment {
-        Environment {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl Document for Environment {
+    fn collection_name() -> &'static str {
+        "Environments"
+    }
+
+    fn with_id(self, id: ObjectId) -> Self {
+        Self {
             id: Some(id),
             ..self
         }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }

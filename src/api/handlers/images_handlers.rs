@@ -1,23 +1,24 @@
 use crate::api::error_rejection::ErrorRejection;
-use crate::data::{Image, ImageRepository};
+use crate::data::{Image, Repository};
 use bollard::image::BuildImageOptions;
 use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
+use mongodb::bson::doc;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
 use warp::multipart::{FormData, Part};
 use warp::Buf;
 
-pub async fn list(repository: ImageRepository) -> Result<warp::reply::Json, warp::Rejection> {
+pub async fn list(repository: Repository<Image>) -> Result<warp::reply::Json, warp::Rejection> {
     let images = repository.list().await?;
 
     Ok(warp::reply::json(&images))
 }
 
 pub async fn create(
-    repository: ImageRepository,
+    repository: Repository<Image>,
     docker: Arc<Docker>,
     form_data: FormData,
 ) -> Result<warp::reply::Json, warp::Rejection> {
@@ -40,10 +41,10 @@ pub async fn create(
     let image = parse_part_to_image(image_data_part).await?;
 
     let already_existing_image = repository
-        .find_by_name_and_version(image.name(), image.version())
+        .find(doc! {"name": image.name(), "version": image.version()})
         .await?;
 
-    if already_existing_image.is_some() {
+    if !already_existing_image.is_empty() {
         return Err(ErrorRejection::reject("Image already exists"));
     }
 

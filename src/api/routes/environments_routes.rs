@@ -5,7 +5,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::handlers::environments_handlers;
-use crate::data::EnvironmentRepository;
+use crate::data::{Environment, Repository};
 
 pub fn environment_routes(
     database: Arc<Database>,
@@ -29,6 +29,6 @@ pub fn environment_routes(
 
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (EnvironmentRepository,), Error = Infallible> + Clone {
-    warp::any().map(move || EnvironmentRepository::new(database.clone().as_ref()))
+) -> impl Filter<Extract = (Repository<Environment>,), Error = Infallible> + Clone {
+    warp::any().map(move || Repository::new(database.clone().as_ref()))
 }

@@ -4,7 +4,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::handlers::scenarios_handlers;
-use crate::data::ScenarioRepository;
+use crate::data::{Repository, Scenario};
 
 pub fn scenarios_routes(
     database: Arc<Database>,
@@ -28,6 +28,6 @@ pub fn scenarios_routes(
 
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (ScenarioRepository,), Error = Infallible> + Clone {
-    warp::any().map(move || ScenarioRepository::new(database.clone().as_ref()))
+) -> impl Filter<Extract = (Repository<Scenario>,), Error = Infallible> + Clone {
+    warp::any().map(move || Repository::new(database.clone().as_ref()))
 }

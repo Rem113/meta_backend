@@ -2,7 +2,7 @@ use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 use super::serializers::serialize_option_object_id;
-use crate::data::Step;
+use crate::data::{repository::Document, Step};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Scenario {
@@ -25,14 +25,24 @@ impl Scenario {
         }
     }
 
-    pub fn with_id(self, id: ObjectId) -> Self {
-        Scenario {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn steps(&self) -> &Vec<Step> {
+        &self.steps
+    }
+}
+
+impl Document for Scenario {
+    fn collection_name() -> &'static str {
+        "Scenarios"
+    }
+
+    fn with_id(self, id: ObjectId) -> Self {
+        Self {
             id: Some(id),
             ..self
         }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }

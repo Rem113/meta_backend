@@ -1,20 +1,22 @@
+use mongodb::bson::doc;
+
 use crate::{
     api::error_rejection::ErrorRejection,
-    data::{Simulator, SimulatorRepository},
+    data::{Repository, Simulator},
 };
 
-pub async fn list(repository: SimulatorRepository) -> Result<warp::reply::Json, warp::Rejection> {
+pub async fn list(repository: Repository<Simulator>) -> Result<warp::reply::Json, warp::Rejection> {
     let simulators = repository.list().await?;
 
     Ok(warp::reply::json(&simulators))
 }
 
 pub async fn create(
-    repository: SimulatorRepository,
+    repository: Repository<Simulator>,
     simulator: Simulator,
 ) -> Result<warp::reply::Json, warp::Rejection> {
     let simulators_for_environment = repository
-        .find_by_environment(simulator.environment_id())
+        .find(doc! {"environment_id": simulator.environment_id()})
         .await?;
 
     for other in simulators_for_environment {

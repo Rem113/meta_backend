@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::data::repository::Document;
+
 use super::serializers::serialize_option_object_id;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
@@ -32,11 +34,8 @@ impl Simulator {
         }
     }
 
-    pub fn with_id(self, id: ObjectId) -> Simulator {
-        Self {
-            id: Some(id),
-            ..self
-        }
+    pub fn id(&self) -> Option<&ObjectId> {
+        self.id.as_ref()
     }
 
     pub fn name(&self) -> &str {
@@ -45,5 +44,22 @@ impl Simulator {
 
     pub fn environment_id(&self) -> &ObjectId {
         &self.environment_id
+    }
+
+    pub fn image_id(&self) -> &ObjectId {
+        &self.image_id
+    }
+}
+
+impl Document for Simulator {
+    fn collection_name() -> &'static str {
+        "Simulators"
+    }
+
+    fn with_id(self, id: ObjectId) -> Self {
+        Self {
+            id: Some(id),
+            ..self
+        }
     }
 }

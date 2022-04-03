@@ -6,6 +6,7 @@ use warp::Filter;
 
 mod api;
 mod data;
+mod docker;
 mod loaders;
 
 #[tokio::main]

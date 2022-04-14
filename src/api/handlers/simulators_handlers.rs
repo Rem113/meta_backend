@@ -5,18 +5,18 @@ use crate::{
     data::{Repository, Simulator},
 };
 
-pub async fn list(repository: Repository<Simulator>) -> Result<warp::reply::Json, warp::Rejection> {
-    let simulators = repository.list().await?;
+pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
+    let simulators = repository.list::<Simulator>().await?;
 
     Ok(warp::reply::json(&simulators))
 }
 
 pub async fn create(
-    repository: Repository<Simulator>,
+    repository: Repository,
     simulator: Simulator,
 ) -> Result<warp::reply::Json, warp::Rejection> {
     let simulators_for_environment = repository
-        .find(doc! {"environment_id": simulator.environment_id()})
+        .find::<Simulator>(doc! {"environment_id": simulator.environment_id()})
         .await?;
 
     for other in simulators_for_environment {

@@ -1,6 +1,6 @@
 use crate::data::repository::Document;
 
-use super::serializers::serialize_option_object_id;
+use super::{serializers::serialize_option_object_id, Tag};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
@@ -12,31 +12,21 @@ pub struct Image {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_option_object_id")]
     id: Option<ObjectId>,
-    name: String,
-    version: String,
+    tag: Tag,
     commands: Vec<Command>,
 }
 
 impl Image {
-    pub fn new(name: String, version: String, commands: Vec<Command>) -> Self {
+    pub fn new(tag: Tag, commands: Vec<Command>) -> Self {
         Self {
             id: None,
-            name,
-            version,
+            tag,
             commands,
         }
     }
 
-    pub fn id(&self) -> Option<&ObjectId> {
-        self.id.as_ref()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn version(&self) -> &str {
-        &self.version
+    pub fn tag(&self) -> &Tag {
+        &self.tag
     }
 }
 

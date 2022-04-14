@@ -1,41 +1,73 @@
-use futures::TryStreamExt;
-use mongodb::{bson::oid::ObjectId, Database};
-use serde::{de::DeserializeOwned, Serialize};
+use std::sync::Arc;
 
 use crate::data::Error;
+use futures::TryStreamExt;
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    Database,
+};
+use serde::{de::DeserializeOwned, Serialize};
 pub trait Document {
     fn collection_name() -> &'static str;
     fn with_id(self, id: ObjectId) -> Self;
 }
 
-pub struct Repository<T> {
-    collection: mongodb::Collection<T>,
+pub struct Repository {
+    database: Arc<Database>,
 }
 
-impl<T: Sync + Send + Serialize + DeserializeOwned + Unpin + Document> Repository<T> {
-    pub fn new(database: &Database) -> Self {
-        Self {
-            collection: database.collection(T::collection_name()),
-        }
+impl Repository {
+    pub fn new(database: Arc<Database>) -> Self {
+        Self { database }
     }
 
-    pub async fn list(&self) -> Result<Vec<T>, Error> {
-        let cursor = self.collection.find(None, None).await?;
+    pub async fn list<T>(&self) -> Result<Vec<T>, Error>
+    where
+        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+    {
+        let collection = self.database.collection(T::collection_name());
 
-        cursor.try_collect().await.map_err(Error::from)
+        let cursor = collection.find(None, None).await?;
+
+        cursor.try_collect().await.map_err(Into::into)
     }
 
-    pub async fn create(&self, document: T) -> Result<T, Error> {
-        let result = self.collection.insert_one(&document, None).await?;
+    pub async fn create<T: Document>(&self, document: T) -> Result<T, Error>
+    where
+        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+    {
+        let collection = self.database.collection::<T>(T::collection_name());
+
+        let result = collection.insert_one(&document, None).await?;
 
         let inserted_id = result.inserted_id.as_object_id().expect("Invalid ObjectID");
 
         Ok(document.with_id(inserted_id))
     }
 
-    pub async fn find(&self, document: mongodb::bson::Document) -> Result<Vec<T>, Error> {
-        let cursor = self.collection.find(Some(document), None).await?;
+    pub async fn find_by_id<T: Document>(&self, id: &ObjectId) -> Result<Option<T>, Error>
+    where
+        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+    {
+        let collection = self.database.collection(T::collection_name());
 
-        cursor.try_collect().await.map_err(Error::from)
+        collection
+            .find_one(doc! {"_id": id}, None)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn find<T: Document>(
+        &self,
+        document: mongodb::bson::Document,
+    ) -> Result<Vec<T>, Error>
+    where
+        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+    {
+        let collection = self.database.collection(T::collection_name());
+
+        let cursor = collection.find(document, None).await?;
+
+        cursor.try_collect().await.map_err(Into::into)
     }
 }

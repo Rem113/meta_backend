@@ -4,7 +4,7 @@ use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
 use serde_json::json;
 
-use crate::data::{Command, Environment, Image, Scenario, Simulator, Step};
+use crate::data::{Command, Environment, Image, Scenario, Simulator, Step, Tag};
 
 use super::Error;
 
@@ -50,8 +50,10 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
     let images = database.collection("Images");
 
     let image = Image::new(
-        String::from("test-sim"),
-        String::from("1.0.0"),
+        Tag {
+            name: String::from("test-sim"),
+            version: String::from("1.0.0"),
+        },
         vec![Command {
             name: String::from("test"),
             description: String::from("This is a test command"),

@@ -6,7 +6,7 @@ use mongodb::Database;
 use warp::Filter;
 
 use crate::api::handlers::images_handlers;
-use crate::data::{Image, Repository};
+use crate::data::Repository;
 
 pub fn images_routes(
     database: Arc<Database>,
@@ -33,8 +33,8 @@ pub fn images_routes(
 
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (Repository<Image>,), Error = Infallible> + Clone {
-    warp::any().map(move || Repository::new(database.clone().as_ref()))
+) -> impl Filter<Extract = (Repository,), Error = Infallible> + Clone {
+    warp::any().map(move || Repository::new(database.clone()))
 }
 
 fn with_docker(

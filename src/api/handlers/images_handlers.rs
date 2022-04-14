@@ -1,6 +1,6 @@
 use crate::api::error_rejection::ErrorRejection;
 use crate::data::{Image, Repository};
-use bollard::image::BuildImageOptions;
+use crate::domain::DockerManager;
 use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
@@ -11,14 +11,14 @@ use std::sync::Arc;
 use warp::multipart::{FormData, Part};
 use warp::Buf;
 
-pub async fn list(repository: Repository<Image>) -> Result<warp::reply::Json, warp::Rejection> {
-    let images = repository.list().await?;
+pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
+    let images = repository.list::<Image>().await?;
 
     Ok(warp::reply::json(&images))
 }
 
 pub async fn create(
-    repository: Repository<Image>,
+    repository: Repository,
     docker: Arc<Docker>,
     form_data: FormData,
 ) -> Result<warp::reply::Json, warp::Rejection> {
@@ -41,7 +41,7 @@ pub async fn create(
     let image = parse_part_to_image(image_data_part).await?;
 
     let already_existing_image = repository
-        .find(doc! {"name": image.name(), "version": image.version()})
+        .find::<Image>(doc! {"name": &image.tag().name, "version": &image.tag().version})
         .await?;
 
     if !already_existing_image.is_empty() {
@@ -59,23 +59,9 @@ pub async fn create(
         .await
         .map_err(|_| ErrorRejection::reject("Failed to read image file"))?;
 
-    let mut docker_build_info = docker.build_image(
-        BuildImageOptions {
-            t: format!("meta/{}:{}", image.name(), image.version()),
-            rm: true,
-            ..Default::default()
-        },
-        None,
-        Some(image_bytes.into()),
-    );
-
-    while let Some(info) = docker_build_info
-        .try_next()
+    DockerManager::create_image(docker, image.tag(), image_bytes)
         .await
-        .map_err(|_| ErrorRejection::reject("An error has occured when building the image"))?
-    {
-        println!("{:?}", info);
-    }
+        .map_err(|error| ErrorRejection::reject(&error.to_string()))?;
 
     let image = repository.create(image).await?;
 

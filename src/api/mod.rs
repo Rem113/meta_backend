@@ -1,6 +1,6 @@
-use bollard::Docker;
 use std::sync::Arc;
 
+use bollard::Docker;
 use mongodb::Database;
 use warp::Filter;
 
@@ -15,8 +15,8 @@ pub fn routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    images_routes(database.clone(), docker)
-        .or(environment_routes(database.clone()))
+    images_routes(database.clone(), docker.clone())
+        .or(environment_routes(database.clone(), docker))
         .or(scenarios_routes(database.clone()))
         .or(simulators_routes(database))
 }

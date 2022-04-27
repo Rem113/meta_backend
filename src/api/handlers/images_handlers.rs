@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
 use warp::multipart::{FormData, Part};
-use warp::Buf;
+use warp::{hyper, Buf};
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let images = repository.list::<Image>().await?;
@@ -26,14 +26,25 @@ pub async fn create(
         .map_ok(|part| (String::from(part.name()), part))
         .try_collect()
         .await
-        .map_err(|error| ErrorRejection::reject(error.to_string().as_str()))?;
+        .map_err(|error| {
+            ErrorRejection::reject(
+                error.to_string().as_str(),
+                hyper::StatusCode::INTERNAL_SERVER_ERROR,
+            )
+        })?;
 
     if !parts.contains_key("image") {
-        return Err(ErrorRejection::reject("Missing image file"));
+        return Err(ErrorRejection::reject(
+            "Missing image file",
+            hyper::StatusCode::BAD_REQUEST,
+        ));
     }
 
     if !parts.contains_key("image_data") {
-        return Err(ErrorRejection::reject("Missing image data"));
+        return Err(ErrorRejection::reject(
+            "Missing image data",
+            hyper::StatusCode::BAD_REQUEST,
+        ));
     }
 
     let image_data_part = parts.remove("image_data").unwrap();
@@ -45,7 +56,10 @@ pub async fn create(
         .await?;
 
     if !already_existing_image.is_empty() {
-        return Err(ErrorRejection::reject("Image already exists"));
+        return Err(ErrorRejection::reject(
+            "Image already exists",
+            hyper::StatusCode::CONFLICT,
+        ));
     }
 
     let image_file_part = parts.remove("image").unwrap();
@@ -57,11 +71,15 @@ pub async fn create(
             async move { Ok(acc) }
         })
         .await
-        .map_err(|_| ErrorRejection::reject("Failed to read image file"))?;
+        .map_err(|_| {
+            ErrorRejection::reject("Failed to read image file", hyper::StatusCode::BAD_REQUEST)
+        })?;
 
     DockerManager::create_image(docker, image.tag(), image_bytes)
         .await
-        .map_err(|error| ErrorRejection::reject(&error.to_string()))?;
+        .map_err(|error| {
+            ErrorRejection::reject(&error.to_string(), hyper::StatusCode::INTERNAL_SERVER_ERROR)
+        })?;
 
     let image = repository.create(image).await?;
 
@@ -79,31 +97,13 @@ async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejec
             async move { Ok(acc) }
         })
         .await
-        .map_err(|_| ErrorRejection::reject("Couldn't parse image data"))?;
+        .map_err(|_| {
+            ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
+        })?;
 
-    let image = serde_json::from_str(&image_data)
-        .map_err(|_| ErrorRejection::reject("Couldn't parse image data"))?;
+    let image = serde_json::from_str(&image_data).map_err(|_| {
+        ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
+    })?;
 
     Ok(image)
-}
-
-pub mod rejection {
-    use crate::api::error_rejection::ErrorRejection;
-    use warp::body;
-
-    pub async fn create(rejection: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
-        if let Some(body::BodyDeserializeError { .. }) = rejection.find() {
-            return Ok(warp::reply::with_status(
-                warp::reply::json(&ErrorRejection::from("Invalid body format")),
-                warp::http::StatusCode::BAD_REQUEST,
-            ));
-        } else if let rejection @ Some(ErrorRejection { .. }) = rejection.find() {
-            return Ok(warp::reply::with_status(
-                warp::reply::json(&rejection.unwrap()),
-                warp::http::StatusCode::BAD_REQUEST,
-            ));
-        };
-
-        Err(rejection)
-    }
 }

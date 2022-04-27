@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use bollard::Docker;
 use mongodb::bson::{doc, oid::ObjectId};
+use warp::hyper;
 
 use crate::{
     api::error_rejection::ErrorRejection,
-    data::{Environment, Repository, Scenario}, domain::DockerExecutor,
+    data::{Environment, Repository, Scenario},
+    domain::DockerExecutor,
 };
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
@@ -23,7 +25,10 @@ pub async fn create(
         .await?;
 
     if !already_existing_environment.is_empty() {
-        return Err(ErrorRejection::reject("Environment alreay exists"));
+        return Err(ErrorRejection::reject(
+            "Environment alreay exists",
+            hyper::StatusCode::CONFLICT,
+        ));
     }
 
     let environment = repository.create(environment).await?;
@@ -47,7 +52,9 @@ pub async fn run(
         .await?
         .unwrap();
 
-    DockerExecutor::run_scenario_in_environment(docker, &environment, &scenario, repository).await.map_err(|error| ErrorRejection::reject(&error.to_string()))?;
+    DockerExecutor::run_scenario_in_environment(docker, &environment, &scenario, repository)
+        .await
+        .map_err(|error| ErrorRejection::reject(&error.to_string(), hyper::StatusCode::INTERNAL_SERVER_ERROR))?;
 
     Ok(warp::reply::json(&(environment, scenario)))
 }

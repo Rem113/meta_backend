@@ -25,8 +25,7 @@ pub fn images_routes(
         .and(warp::path::end())
         .and(with_docker(docker))
         .and(warp::filters::multipart::form())
-        .and_then(images_handlers::create)
-        .recover(images_handlers::rejection::create);
+        .and_then(images_handlers::create);
 
     list.or(create)
 }

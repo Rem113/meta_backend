@@ -1,8 +1,9 @@
 use mongodb::bson::doc;
+use warp::hyper;
 
 use crate::{
     api::error_rejection::ErrorRejection,
-    data::{Repository, Simulator},
+    data::{Environment, Image, Repository, Simulator},
 };
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
@@ -23,11 +24,35 @@ pub async fn create(
         if other.name() == simulator.name() {
             return Err(ErrorRejection::reject(
                 "A simulator with the same name exists in this environment",
+                hyper::StatusCode::CONFLICT,
             ));
         }
     }
 
-    let simulator = repository.create(simulator).await?;
+    let environment = repository
+        .find_by_id::<Environment>(&simulator.environment_id())
+        .await?;
+    let image = repository
+        .find_by_id::<Image>(&simulator.image_id())
+        .await?;
 
-    Ok(warp::reply::json(&simulator))
+    match (environment, image) {
+        (Some(_), Some(_)) => {
+            let simulator = repository.create(simulator).await?;
+
+            Ok(warp::reply::json(&simulator))
+        }
+        (None, None) => Err(ErrorRejection::reject(
+            "Environment and image not found",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+        (None, _) => Err(ErrorRejection::reject(
+            "Environment not found",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+        (_, None) => Err(ErrorRejection::reject(
+            "Image not found",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+    }
 }

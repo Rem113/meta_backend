@@ -1,10 +1,12 @@
-use std::sync::Arc;
+use std::{sync::Arc, convert::Infallible};
 
 use bollard::Docker;
 use mongodb::Database;
 use warp::Filter;
 
 use crate::api::routes::{environment_routes, images_routes, scenarios_routes, simulators_routes};
+
+use self::error_rejection::ErrorRejection;
 
 mod error;
 mod error_rejection;
@@ -19,4 +21,13 @@ pub fn routes(
         .or(environment_routes(database.clone(), docker))
         .or(scenarios_routes(database.clone()))
         .or(simulators_routes(database))
+}
+
+pub async fn rejection_handler(rejection: warp::Rejection) -> Result<impl warp::reply::Reply, Infallible> {
+    let (message, status) = match rejection.find::<ErrorRejection>() {
+        Some(error) => (error.message(), error.status()),
+        None => ("Unknown error", warp::hyper::StatusCode::INTERNAL_SERVER_ERROR),
+    };
+
+    Ok(warp::reply::with_status(warp::reply::json(&message), status))
 }

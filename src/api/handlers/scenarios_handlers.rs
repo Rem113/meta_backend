@@ -1,4 +1,5 @@
 use mongodb::bson::doc;
+use warp::hyper;
 
 use crate::{
     api::error_rejection::ErrorRejection,
@@ -20,7 +21,10 @@ pub async fn create(
         .await?;
 
     if !already_existing_scenario.is_empty() {
-        return Err(ErrorRejection::reject("Scenario already exists"));
+        return Err(ErrorRejection::reject(
+            "Scenario already exists",
+            hyper::StatusCode::CONFLICT,
+        ));
     }
 
     let scenario = repository.create(scenario).await?;

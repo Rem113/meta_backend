@@ -1,9 +1,13 @@
-use mongodb::bson::doc;
+use std::sync::Arc;
+
+use bollard::Docker;
+use mongodb::bson::{doc, oid::ObjectId};
 use warp::hyper;
 
 use crate::{
     api::error_rejection::ErrorRejection,
-    data::{Repository, Scenario},
+    data::{Environment, Repository, Scenario},
+    domain::DockerExecutor,
 };
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
@@ -30,4 +34,31 @@ pub async fn create(
     let scenario = repository.create(scenario).await?;
 
     Ok(warp::reply::json(&scenario))
+}
+
+pub async fn run(
+    repository: Repository,
+    scenario_id: String,
+    environment_id: String,
+    docker: Arc<Docker>,
+    web_socket: warp::ws::Ws,
+) -> Result<impl warp::reply::Reply, warp::Rejection> {
+    let environment_id = ObjectId::parse_str(&environment_id).expect("Invalid environment id");
+    let scenario_id = ObjectId::parse_str(&scenario_id).expect("Invalid scenario id");
+
+    let environment = repository
+        .find_by_id::<Environment>(&environment_id)
+        .await?
+        .expect("Environment not found");
+
+    let scenario = repository
+        .find_by_id::<Scenario>(&scenario_id)
+        .await?
+        .expect("Scenario not found");
+
+    Ok(web_socket.on_upgrade(|web_socket| async move {
+        DockerExecutor::run_scenario_in_environment(docker, &environment, &scenario, repository, web_socket)
+            .await
+            .ok();
+    }))
 }

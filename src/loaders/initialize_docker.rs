@@ -23,7 +23,7 @@ async fn format_image_repository(docker: Docker) -> Result<(), Error> {
         for tag in image.repo_tags {
             match tag
                 .trim_start_matches("meta/")
-                .split(":")
+                .split(':')
                 .collect::<Vec<_>>()
                 .as_slice()
             {
@@ -56,7 +56,7 @@ async fn add_test_sim(docker: Docker) -> Result<(), Error> {
             name: String::from("test-sim"),
             version: String::from("1.0.0"),
         },
-        image_file.into(),
+        image_file,
     )
     .await
     .map_err(Error::from)

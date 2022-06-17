@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::data::repository::Document;
 
-use super::serializers::serialize_option_object_id;
+use super::serializers::{serialize_object_id, serialize_option_object_id};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,9 @@ pub struct Simulator {
     #[serde(serialize_with = "serialize_option_object_id")]
     id: Option<ObjectId>,
     name: String,
+    #[serde(serialize_with = "serialize_object_id")]
     environment_id: ObjectId,
+    #[serde(serialize_with = "serialize_object_id")]
     image_id: ObjectId,
     configuration: HashMap<String, String>,
 }
@@ -44,6 +46,10 @@ impl Simulator {
 
     pub fn image_id(&self) -> &ObjectId {
         &self.image_id
+    }
+
+    pub fn configuration(&self) -> &HashMap<String, String> {
+        &self.configuration
     }
 }
 

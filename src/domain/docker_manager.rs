@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bollard::{
-    image::{BuildImageOptions, ListImagesOptions},
+    image::{BuildImageOptions, ListImagesOptions, RemoveImageOptions},
     models::ImageSummary,
     Docker,
 };
@@ -53,7 +53,14 @@ impl DockerManager {
 
     pub async fn delete_image(docker: Arc<Docker>, tag: Tag) -> Result<(), Error> {
         docker
-            .remove_image(&tag.as_meta(), None, None)
+            .remove_image(
+                &tag.as_meta(),
+                Some(RemoveImageOptions {
+                    force: true,
+                    ..Default::default()
+                }),
+                None,
+            )
             .await
             .map_err(Error::Docker)?;
 

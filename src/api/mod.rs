@@ -18,8 +18,8 @@ pub fn routes(
     docker: Arc<Docker>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     images_routes(database.clone(), docker.clone())
-        .or(environment_routes(database.clone(), docker))
-        .or(scenarios_routes(database.clone()))
+        .or(environment_routes(database.clone()))
+        .or(scenarios_routes(database.clone(), docker))
         .or(simulators_routes(database))
 }
 

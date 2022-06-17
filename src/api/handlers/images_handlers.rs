@@ -8,6 +8,7 @@ use mongodb::bson::doc;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
+use tracing::warn;
 use warp::multipart::{FormData, Part};
 use warp::{hyper, Buf};
 
@@ -27,6 +28,7 @@ pub async fn create(
         .try_collect()
         .await
         .map_err(|error| {
+            warn!("{:?}", error);
             ErrorRejection::reject(
                 error.to_string().as_str(),
                 hyper::StatusCode::INTERNAL_SERVER_ERROR,
@@ -71,13 +73,15 @@ pub async fn create(
             async move { Ok(acc) }
         })
         .await
-        .map_err(|_| {
+        .map_err(|error| {
+            warn!("{:?}", error);
             ErrorRejection::reject("Failed to read image file", hyper::StatusCode::BAD_REQUEST)
         })?;
 
     DockerManager::create_image(docker, image.tag(), image_bytes)
         .await
         .map_err(|error| {
+            warn!("{:?}", error);
             ErrorRejection::reject(&error.to_string(), hyper::StatusCode::INTERNAL_SERVER_ERROR)
         })?;
 
@@ -97,11 +101,13 @@ async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejec
             async move { Ok(acc) }
         })
         .await
-        .map_err(|_| {
+        .map_err(|error| {
+            warn!("{:?}", error);
             ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
         })?;
 
-    let image = serde_json::from_str(&image_data).map_err(|_| {
+    let image = serde_json::from_str(&image_data).map_err(|error| {
+        warn!("{:?}", error);
         ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
     })?;
 

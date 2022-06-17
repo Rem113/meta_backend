@@ -2,6 +2,7 @@ use warp::hyper;
 
 use crate::api::error::Error;
 use crate::data;
+
 #[derive(Debug)]
 pub struct ErrorRejection {
     message: String,

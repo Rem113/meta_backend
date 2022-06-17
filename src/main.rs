@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(warp::trace::request())
         .with(cors)
         .recover(api::rejection_handler);
-        
+
     let address = SocketAddr::from_str("127.0.0.1:4000").expect("Could not parse address");
 
     let server = warp::serve(api).run(address);

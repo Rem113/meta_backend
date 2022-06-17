@@ -30,10 +30,10 @@ pub async fn create(
     }
 
     let environment = repository
-        .find_by_id::<Environment>(&simulator.environment_id())
+        .find_by_id::<Environment>(simulator.environment_id())
         .await?;
     let image = repository
-        .find_by_id::<Image>(&simulator.image_id())
+        .find_by_id::<Image>(simulator.image_id())
         .await?;
 
     match (environment, image) {

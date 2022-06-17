@@ -57,6 +57,7 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
         vec![Command {
             name: String::from("test"),
             description: String::from("This is a test command"),
+            path: String::from("test"),
         }],
     );
 
@@ -96,14 +97,35 @@ async fn initalize_scenarios(database: &Database, simulator_id: ObjectId) -> Res
     let scenario = Scenario::new(
         String::from("My scenario"),
         String::from("This is my scenario"),
-        vec![Step {
-            simulator_id,
-            command: Command {
-                name: String::from("test"),
-                description: String::from("This is a test command"),
+        vec![
+            Step {
+                simulator_id,
+                command: Command {
+                    name: String::from("test"),
+                    description: String::from("This is a test command"),
+                    path: String::from("test"),
+                },
+                arguments: json!({ "name": "Rem113" }),
             },
-            arguments: json!({}),
-        }],
+            Step {
+                simulator_id,
+                command: Command {
+                    name: String::from("test"),
+                    description: String::from("This is a test command"),
+                    path: String::from("test"),
+                },
+                arguments: json!({}),
+            },
+            Step {
+                simulator_id,
+                command: Command {
+                    name: String::from("test"),
+                    description: String::from("This is a test command"),
+                    path: String::from("test"),
+                },
+                arguments: json!({ "name": "Ninja" }),
+            },
+        ],
     );
 
     scenarios.insert_one(scenario, None).await?;

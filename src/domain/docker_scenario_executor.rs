@@ -1,11 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bollard::{
-    container::{
-        Config, CreateContainerOptions, LogOutput, LogsOptions, RemoveContainerOptions,
-        StartContainerOptions,
-    },
-    models::HostConfig,
+    container::{LogOutput, LogsOptions, RemoveContainerOptions},
     Docker,
 };
 use futures::{future::try_join_all, SinkExt, StreamExt};
@@ -17,14 +13,14 @@ use warp::ws::Message;
 
 use crate::{
     data::{Environment, Image, Repository, Scenario, Simulator, Step},
-    domain::running_simulator::RunningSimulator,
+    domain::{docker_container::DockerContainer, docker_simulator::DockerSimulator},
 };
 
 use super::error::Error;
 
-pub struct DockerExecutor {}
+pub struct DockerScenarioExecutor {}
 
-impl DockerExecutor {
+impl DockerScenarioExecutor {
     pub async fn run_scenario_in_environment(
         docker: Arc<Docker>,
         environment: &Environment,
@@ -105,7 +101,7 @@ async fn instantiate_simulators(
     repository: Repository,
     docker: Arc<Docker>,
     environment: &Environment,
-) -> Result<HashMap<ObjectId, RunningSimulator>, Error> {
+) -> Result<HashMap<ObjectId, DockerSimulator>, Error> {
     let mut simulator_id_to_running_simulator = HashMap::new();
 
     for simulator_id in simulators {
@@ -137,89 +133,16 @@ async fn instantiate_simulator(
     environment: &Environment,
     simulator: &Simulator,
     image: Image,
-) -> Result<RunningSimulator, Error> {
-    let container_name = create_container(&docker.clone(), environment, simulator, image).await?;
+) -> Result<DockerSimulator, Error> {
+    let docker_container =
+        DockerContainer::create(docker.clone(), environment, simulator, &image).await?;
 
-    docker
-        .start_container(&container_name, None::<StartContainerOptions<String>>)
-        .await?;
-
-    let port = get_exposed_port_for_container(docker.clone(), &container_name).await?;
-
-    trace!("Container exposes port {}", port);
-
-    Ok(RunningSimulator::new(container_name.clone(), port))
-}
-
-async fn create_container(
-    docker: &Arc<Docker>,
-    environment: &Environment,
-    simulator: &Simulator,
-    image: Image,
-) -> Result<String, Error> {
-    let name = format!("{}-{}", environment.name(), simulator.name());
-
-    let container_create_response = docker
-        .create_container(
-            Some(CreateContainerOptions { name: &name }),
-            Config {
-                attach_stdout: Some(true),
-                attach_stderr: Some(true),
-                image: Some(image.tag().as_meta()),
-                host_config: Some(HostConfig {
-                    publish_all_ports: Some(true),
-                    ..Default::default()
-                }),
-                env: Some(
-                    simulator
-                        .configuration()
-                        .iter()
-                        .map(|(key, value)| format!("{}={}", key, value))
-                        .collect::<Vec<String>>(),
-                ),
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    trace!("{:?}", container_create_response);
-
-    Ok(name)
-}
-
-async fn get_exposed_port_for_container(
-    docker: Arc<Docker>,
-    container_name: &str,
-) -> Result<u16, Error> {
-    let container_inspect_response = docker.inspect_container(container_name, None).await?;
-
-    let port = container_inspect_response
-        .network_settings
-        .and_then(|network_settings| network_settings.ports)
-        .and_then(|ports| ports.get("3000/tcp").cloned())
-        .and_then(|port| port.as_ref().cloned())
-        .and_then(|ports| {
-            ports
-                .into_iter()
-                .filter_map(|port| port.host_port)
-                .collect::<Vec<_>>()
-                .first()
-                .cloned()
-        })
-        .and_then(|port| port.parse::<u16>().ok());
-
-    match port {
-        Some(port) => Ok(port),
-        None => Err(Error::SimulatorNotFound(format!(
-            "Could not find exposed port for simulator {}",
-            container_name
-        ))),
-    }
+    docker_container.start(docker.clone()).await
 }
 
 fn attach_log_listener_to_simulators(
     docker: Arc<Docker>,
-    running_simulators: Vec<RunningSimulator>,
+    running_simulators: Vec<DockerSimulator>,
     tx: Arc<UnboundedSender<LogOutput>>,
 ) -> Result<(), Error> {
     for running_simulator in running_simulators {
@@ -250,7 +173,7 @@ fn attach_log_listener_to_simulators(
 }
 
 async fn wait_for_simulators_to_be_ready(
-    running_simulators: Vec<RunningSimulator>,
+    running_simulators: Vec<DockerSimulator>,
 ) -> Result<(), Error> {
     let ready_futures = running_simulators
         .into_iter()
@@ -282,7 +205,7 @@ async fn wait_for_simulators_to_be_ready(
     result.into_iter().collect()
 }
 
-async fn run_scenario(step_data: &[(&Step, &RunningSimulator)]) -> Result<(), Error> {
+async fn run_scenario(step_data: &[(&Step, &DockerSimulator)]) -> Result<(), Error> {
     for (step, running_simulator) in step_data.iter() {
         trace!(
             "Command: {:?}, Arguments: {:?}",

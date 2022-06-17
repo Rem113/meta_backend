@@ -7,7 +7,7 @@ use warp::hyper;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Repository, Scenario},
-    domain::DockerExecutor,
+    domain::DockerScenarioExecutor,
 };
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
@@ -57,8 +57,14 @@ pub async fn run(
         .expect("Scenario not found");
 
     Ok(web_socket.on_upgrade(|web_socket| async move {
-        DockerExecutor::run_scenario_in_environment(docker, &environment, &scenario, repository, web_socket)
-            .await
-            .ok();
+        DockerScenarioExecutor::run_scenario_in_environment(
+            docker,
+            &environment,
+            &scenario,
+            repository,
+            web_socket,
+        )
+        .await
+        .ok();
     }))
 }

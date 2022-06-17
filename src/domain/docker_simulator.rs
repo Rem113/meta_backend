@@ -1,13 +1,13 @@
 use super::Error;
 
 #[derive(Clone)]
-pub struct RunningSimulator {
+pub struct DockerSimulator {
     name: String,
     port: u16,
     client: reqwest::Client,
 }
 
-impl RunningSimulator {
+impl DockerSimulator {
     pub fn new(name: String, port: u16) -> Self {
         Self {
             name,

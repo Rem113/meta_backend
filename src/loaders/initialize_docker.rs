@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bollard::Docker;
 
-use crate::{data::Tag, domain::DockerManager};
+use crate::{data::Tag, domain::DockerImage};
 
 use super::Error;
 
@@ -17,7 +17,7 @@ pub async fn initialize_docker() -> Result<Docker, Error> {
 
 async fn format_image_repository(docker: Docker) -> Result<(), Error> {
     let docker = Arc::new(docker);
-    let images = DockerManager::list_images(docker.clone()).await?;
+    let images = DockerImage::list(docker.clone()).await?;
 
     for image in images {
         for tag in image.repo_tags {
@@ -28,13 +28,11 @@ async fn format_image_repository(docker: Docker) -> Result<(), Error> {
                 .as_slice()
             {
                 [name, version] => {
-                    DockerManager::delete_image(
-                        docker.clone(),
-                        Tag {
-                            name: String::from(*name),
-                            version: String::from(*version),
-                        },
-                    )
+                    DockerImage::from(Tag {
+                        name: String::from(*name),
+                        version: String::from(*version),
+                    })
+                    .delete(docker.clone())
                     .await?
                 }
                 _ => continue,
@@ -50,14 +48,15 @@ async fn add_test_sim(docker: Docker) -> Result<(), Error> {
         .await
         .map_err(|_| Error::Docker(String::from("Unexpected error while reading image file")))?;
 
-    DockerManager::create_image(
+    DockerImage::create(
         Arc::new(docker),
-        &Tag {
+        Tag {
             name: String::from("test-sim"),
             version: String::from("1.0.0"),
         },
         image_file,
     )
-    .await
-    .map_err(Error::from)
+    .await?;
+
+    Ok(())
 }

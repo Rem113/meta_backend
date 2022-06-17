@@ -1,6 +1,6 @@
 use crate::api::error_rejection::ErrorRejection;
 use crate::data::{Image, Repository};
-use crate::domain::DockerManager;
+use crate::domain::DockerImage;
 use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
@@ -78,7 +78,7 @@ pub async fn create(
             ErrorRejection::reject("Failed to read image file", hyper::StatusCode::BAD_REQUEST)
         })?;
 
-    DockerManager::create_image(docker, image.tag(), image_bytes)
+    DockerImage::create_image(docker, image.tag(), image_bytes)
         .await
         .map_err(|error| {
             warn!("{:?}", error);

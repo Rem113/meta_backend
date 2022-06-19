@@ -2,7 +2,6 @@ use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use tracing::info;
 use tracing_subscriber::{filter::EnvFilter, fmt};
 use warp::Filter;
 
@@ -35,8 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let address = SocketAddr::from_str("127.0.0.1:4000").expect("Could not parse address");
 
     let server = warp::serve(api).run(address);
-
-    info!("Listening on http://{address}");
 
     server.await;
 

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bollard::{
-    container::{LogOutput, LogsOptions, RemoveContainerOptions},
+    container::{LogOutput, LogsOptions},
     Docker,
 };
 use futures::{future::try_join_all, SinkExt, StreamExt};
@@ -12,8 +12,8 @@ use tracing::{trace, warn};
 use warp::ws::Message;
 
 use crate::{
-    data::{Environment, Image, Repository, Scenario, Simulator, Step},
-    domain::{docker_container::DockerContainer, docker_simulator::DockerSimulator},
+    data::{Environment, Repository, Scenario, Simulator, Step},
+    domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
 };
 
 use super::error::Error;
@@ -30,12 +30,11 @@ impl DockerScenarioExecutor {
     ) -> Result<(), Error> {
         let steps = scenario.steps();
 
-        let unique_simulators = steps.iter().fold(Vec::new(), |mut accumulator, step| {
-            if !accumulator.contains(&step.simulator_id) {
-                accumulator.push(step.simulator_id);
-            }
-            accumulator
-        });
+        let mut unique_simulators = steps
+            .iter()
+            .map(|step| step.simulator_id)
+            .collect::<Vec<_>>();
+        unique_simulators.dedup();
 
         let simulator_id_to_running_simulator =
             instantiate_simulators(unique_simulators, repository, docker.clone(), environment)
@@ -80,16 +79,8 @@ impl DockerScenarioExecutor {
             .ok();
         }
 
-        for running_simulator in running_simulators {
-            docker
-                .remove_container(
-                    running_simulator.name(),
-                    Some(RemoveContainerOptions {
-                        force: true,
-                        ..Default::default()
-                    }),
-                )
-                .await?;
+        for running_docker_simulator in running_simulators {
+            running_docker_simulator.remove().await?;
         }
 
         Ok(())
@@ -101,8 +92,8 @@ async fn instantiate_simulators(
     repository: Repository,
     docker: Arc<Docker>,
     environment: &Environment,
-) -> Result<HashMap<ObjectId, DockerSimulator>, Error> {
-    let mut simulator_id_to_running_simulator = HashMap::new();
+) -> Result<HashMap<ObjectId, RunningDockerSimulator>, Error> {
+    let mut simulator_id_to_running_docker_simulator = HashMap::new();
 
     for simulator_id in simulators {
         let simulator = repository.find_by_id::<Simulator>(&simulator_id).await?;
@@ -119,40 +110,31 @@ async fn instantiate_simulators(
             None => return Err(Error::ImageNotFound(simulator.image_id().to_string())),
         };
 
-        let running_simulator =
-            instantiate_simulator(docker.clone(), environment, &simulator, image).await?;
+        let docker_container =
+            DockerSimulator::create(docker.clone(), environment, &simulator, &image).await?;
 
-        simulator_id_to_running_simulator.insert(simulator_id, running_simulator);
+        let docker_simulator = docker_container.start().await?;
+
+        simulator_id_to_running_docker_simulator.insert(simulator_id, docker_simulator);
     }
 
-    Ok(simulator_id_to_running_simulator)
-}
-
-async fn instantiate_simulator(
-    docker: Arc<Docker>,
-    environment: &Environment,
-    simulator: &Simulator,
-    image: Image,
-) -> Result<DockerSimulator, Error> {
-    let docker_container =
-        DockerContainer::create(docker.clone(), environment, simulator, &image).await?;
-
-    docker_container.start(docker.clone()).await
+    Ok(simulator_id_to_running_docker_simulator)
 }
 
 fn attach_log_listener_to_simulators(
     docker: Arc<Docker>,
-    running_simulators: Vec<DockerSimulator>,
+    running_docker_simulators: Vec<RunningDockerSimulator>,
     tx: Arc<UnboundedSender<LogOutput>>,
 ) -> Result<(), Error> {
-    for running_simulator in running_simulators {
+    for running_docker_simulator in running_docker_simulators {
         let docker = docker.clone();
         let tx = tx.clone();
 
+        // TODO: Extract
         tokio::spawn(async move {
             docker
                 .logs(
-                    running_simulator.name(),
+                    running_docker_simulator.name(),
                     Some(LogsOptions::<String> {
                         follow: true,
                         stdout: true,
@@ -173,9 +155,9 @@ fn attach_log_listener_to_simulators(
 }
 
 async fn wait_for_simulators_to_be_ready(
-    running_simulators: Vec<DockerSimulator>,
+    running_docker_simulators: Vec<RunningDockerSimulator>,
 ) -> Result<(), Error> {
-    let ready_futures = running_simulators
+    let ready_futures = running_docker_simulators
         .into_iter()
         .map(|running_simulator| {
             tokio::spawn(async move {
@@ -205,7 +187,7 @@ async fn wait_for_simulators_to_be_ready(
     result.into_iter().collect()
 }
 
-async fn run_scenario(step_data: &[(&Step, &DockerSimulator)]) -> Result<(), Error> {
+async fn run_scenario(step_data: &[(&Step, &RunningDockerSimulator)]) -> Result<(), Error> {
     for (step, running_simulator) in step_data.iter() {
         trace!(
             "Command: {:?}, Arguments: {:?}",

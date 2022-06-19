@@ -78,7 +78,7 @@ pub async fn create(
             ErrorRejection::reject("Failed to read image file", hyper::StatusCode::BAD_REQUEST)
         })?;
 
-    DockerImage::create_image(docker, image.tag(), image_bytes)
+    DockerImage::create(docker, image.tag().to_owned(), image_bytes)
         .await
         .map_err(|error| {
             warn!("{:?}", error);

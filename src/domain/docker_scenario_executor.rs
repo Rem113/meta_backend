@@ -72,7 +72,7 @@ impl DockerScenarioExecutor {
             })
             .collect::<Vec<_>>();
 
-        if let Err(error) = run_scenario(&step_data).await {
+        if let Err(error) = run_scenario(&step_data, tx.clone()).await {
             tx.send(LogOutput::StdErr {
                 message: error.to_string().into(),
             })
@@ -155,7 +155,10 @@ async fn wait_for_simulators_to_be_ready(
     result.into_iter().collect()
 }
 
-async fn run_scenario(step_data: &[(&Step, &RunningDockerSimulator)]) -> Result<(), Error> {
+async fn run_scenario(
+    step_data: &[(&Step, &RunningDockerSimulator)],
+    tx: Arc<UnboundedSender<LogOutput>>,
+) -> Result<(), Error> {
     for (step, running_simulator) in step_data.iter() {
         trace!(
             "Command: {:?}, Arguments: {:?}",
@@ -167,12 +170,19 @@ async fn run_scenario(step_data: &[(&Step, &RunningDockerSimulator)]) -> Result<
             .execute_command(&step.command.path, &step.arguments)
             .await;
 
-        if let Err(err) = command_result {
-            return Err(Error::SimulatorCommand(format!(
-                "Step failed with error: {:?}",
-                err
-            )));
-        }
+        match command_result {
+            Ok(response) => tx
+                .send(LogOutput::StdOut {
+                    message: response.into(),
+                })
+                .ok(),
+            Err(err) => {
+                return Err(Error::SimulatorCommand(format!(
+                    "Step failed with error: {:?}",
+                    err
+                )))
+            }
+        };
 
         trace!("Ran command {:?}", step.command);
     }

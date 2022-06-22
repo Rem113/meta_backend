@@ -28,7 +28,7 @@ async fn populate_database(database: &Database) -> Result<(), Error> {
     let environment_id = initialize_environments(database).await?;
     let image_id = initialize_images(database).await?;
     let simulator_id = initialize_simulators(database, environment_id, image_id).await?;
-    initalize_scenarios(database, simulator_id).await?;
+    initialize_scenarios(database, simulator_id).await?;
 
     Ok(())
 }
@@ -80,7 +80,7 @@ async fn initialize_simulators(
         String::from("test-sim"),
         environment_id,
         image_id,
-        HashMap::new(),
+        HashMap::from([(String::from("greeting"), String::from("Hello"))]),
     );
 
     let result = simulators.insert_one(simulator, None).await?;
@@ -91,7 +91,7 @@ async fn initialize_simulators(
         .expect("Failed to get ObjectId for simulator"))
 }
 
-async fn initalize_scenarios(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
+async fn initialize_scenarios(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
     let scenarios = database.collection("Scenarios");
 
     let scenario = Scenario::new(

@@ -39,7 +39,7 @@ impl RunningDockerSimulator {
         &self,
         command: &str,
         arguments: &serde_json::Value,
-    ) -> Result<(), Error> {
+    ) -> Result<String, Error> {
         let url = format!("http://localhost:{}/command/{}", self.port, command);
 
         let response = self.client.post(&url).json(&arguments).send().await;
@@ -47,7 +47,7 @@ impl RunningDockerSimulator {
         match response {
             Ok(response) => {
                 if response.status().is_success() {
-                    Ok(())
+                    Ok(response.text().await.unwrap())
                 } else {
                     let response_status = response.status();
                     let response_text = response.text().await;

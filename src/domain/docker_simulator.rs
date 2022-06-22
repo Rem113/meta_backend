@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
+use crate::data::{Environment, Image, Simulator};
+use bollard::container::{LogOutput, LogsOptions, RemoveContainerOptions};
 use bollard::{
     container::{Config, CreateContainerOptions, StartContainerOptions},
     models::HostConfig,
     Docker,
 };
-
-use crate::data::{Environment, Image, Simulator};
+use futures::stream::StreamExt;
+use tokio::sync::mpsc::UnboundedSender;
 
 use super::{running_docker_simulator::RunningDockerSimulator, Error};
 
@@ -50,19 +52,67 @@ impl DockerSimulator {
         Ok(DockerSimulator { name, docker })
     }
 
-    pub async fn start(self) -> Result<RunningDockerSimulator, Error> {
+    pub async fn start(
+        self,
+        tx: Option<Arc<UnboundedSender<LogOutput>>>,
+    ) -> Result<RunningDockerSimulator, Error> {
         self.docker
             .start_container(self.name(), None::<StartContainerOptions<String>>)
             .await?;
 
-        // TODO: Should remove the container when get exposed port fails
-        let port = get_exposed_port_for_container(self.docker.clone(), self.name()).await?;
+        match get_exposed_port_for_container(self.docker.clone(), self.name()).await {
+            Ok(port) => {
+                if let Some(sender) = tx {
+                    self.attach_logs(sender);
+                };
 
-        Ok(RunningDockerSimulator::new(
-            self.name().to_owned(),
-            port,
-            self.docker,
-        ))
+                Ok(RunningDockerSimulator::new(
+                    self.name().to_owned(),
+                    port,
+                    self.docker,
+                ))
+            }
+            Err(_) => {
+                self.docker
+                    .remove_container(
+                        self.name(),
+                        Some(RemoveContainerOptions {
+                            force: true,
+                            ..Default::default()
+                        }),
+                    )
+                    .await
+                    .ok();
+
+                Err(Error::SimulatorNotReady(String::from(
+                    "No port exposed by simulator",
+                )))
+            }
+        }
+    }
+
+    fn attach_logs(&self, tx: Arc<UnboundedSender<LogOutput>>) {
+        let docker = self.docker.clone();
+        let name = self.name().to_owned();
+
+        tokio::spawn(async move {
+            docker
+                .logs(
+                    &name,
+                    Some(LogsOptions::<String> {
+                        follow: true,
+                        stdout: true,
+                        stderr: true,
+                        timestamps: true,
+                        ..Default::default()
+                    }),
+                )
+                .filter_map(|result| async { result.ok() })
+                .for_each(|log| async {
+                    tx.send(log).ok();
+                })
+                .await;
+        });
     }
 
     pub fn name(&self) -> &String {

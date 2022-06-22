@@ -1,10 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use bollard::{
-    container::{LogOutput, LogsOptions},
-    Docker,
-};
-use futures::{future::try_join_all, SinkExt, StreamExt};
+use bollard::{container::LogOutput, Docker};
+use futures::{future::try_join_all, SinkExt};
 use mongodb::bson::oid::ObjectId;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
@@ -36,19 +33,22 @@ impl DockerScenarioExecutor {
             .collect::<Vec<_>>();
         unique_simulators.dedup();
 
-        let simulator_id_to_running_simulator =
-            instantiate_simulators(unique_simulators, repository, docker.clone(), environment)
-                .await?;
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let tx = Arc::new(tx);
+
+        let simulator_id_to_running_simulator = instantiate_simulators(
+            unique_simulators,
+            repository,
+            docker.clone(),
+            environment,
+            tx.clone(),
+        )
+        .await?;
 
         let running_simulators = simulator_id_to_running_simulator
             .values()
             .cloned()
             .collect::<Vec<_>>();
-
-        let (tx, mut rx) = mpsc::unbounded_channel();
-        let tx = Arc::new(tx);
-
-        attach_log_listener_to_simulators(docker.clone(), running_simulators.clone(), tx.clone())?;
 
         wait_for_simulators_to_be_ready(running_simulators.clone()).await?;
 
@@ -92,6 +92,7 @@ async fn instantiate_simulators(
     repository: Repository,
     docker: Arc<Docker>,
     environment: &Environment,
+    tx: Arc<UnboundedSender<LogOutput>>,
 ) -> Result<HashMap<ObjectId, RunningDockerSimulator>, Error> {
     let mut simulator_id_to_running_docker_simulator = HashMap::new();
 
@@ -113,45 +114,12 @@ async fn instantiate_simulators(
         let docker_container =
             DockerSimulator::create(docker.clone(), environment, &simulator, &image).await?;
 
-        let docker_simulator = docker_container.start().await?;
+        let docker_simulator = docker_container.start(Some(tx.clone())).await?;
 
         simulator_id_to_running_docker_simulator.insert(simulator_id, docker_simulator);
     }
 
     Ok(simulator_id_to_running_docker_simulator)
-}
-
-fn attach_log_listener_to_simulators(
-    docker: Arc<Docker>,
-    running_docker_simulators: Vec<RunningDockerSimulator>,
-    tx: Arc<UnboundedSender<LogOutput>>,
-) -> Result<(), Error> {
-    for running_docker_simulator in running_docker_simulators {
-        let docker = docker.clone();
-        let tx = tx.clone();
-
-        // TODO: Extract
-        tokio::spawn(async move {
-            docker
-                .logs(
-                    running_docker_simulator.name(),
-                    Some(LogsOptions::<String> {
-                        follow: true,
-                        stdout: true,
-                        stderr: true,
-                        timestamps: true,
-                        ..Default::default()
-                    }),
-                )
-                .filter_map(|result| async { result.ok() })
-                .for_each(|log| async {
-                    tx.send(log).ok();
-                })
-                .await;
-        });
-    }
-
-    Ok(())
 }
 
 async fn wait_for_simulators_to_be_ready(

@@ -80,7 +80,9 @@ impl DockerScenarioExecutor {
         }
 
         for running_docker_simulator in running_simulators {
-            running_docker_simulator.remove().await?;
+            if let Err(error) = running_docker_simulator.remove().await {
+                warn!("Failed to remove simulator: {:?}", error);
+            }
         }
 
         Ok(())
@@ -177,7 +179,7 @@ async fn run_scenario(
                 })
                 .ok(),
             Err(err) => {
-                return Err(Error::SimulatorCommand(format!(
+                return Err(Error::SimulatorCommandFailed(format!(
                     "Step failed with error: {:?}",
                     err
                 )))

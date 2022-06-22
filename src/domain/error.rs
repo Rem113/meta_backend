@@ -7,7 +7,7 @@ pub enum Error {
     #[error("{0}")]
     SimulatorNotReady(String),
     #[error("{0}")]
-    SimulatorCommand(String),
+    SimulatorCommandFailed(String),
     #[error("Simulator not found. Simulator ID: {0:#?}")]
     SimulatorNotFound(String),
     #[error("Image not found. Image ID: {0:#?}")]

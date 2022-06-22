@@ -53,18 +53,18 @@ impl RunningDockerSimulator {
                     let response_text = response.text().await;
 
                     match response_text {
-                        Ok(text) => Err(Error::SimulatorCommand(format!(
+                        Ok(text) => Err(Error::SimulatorCommandFailed(format!(
                             "{}: {}",
                             response_status, text
                         ))),
-                        Err(error) => Err(Error::SimulatorCommand(format!(
+                        Err(error) => Err(Error::SimulatorCommandFailed(format!(
                             "{}: {}",
                             response_status, error
                         ))),
                     }
                 }
             }
-            Err(err) => Err(Error::SimulatorCommand(err.to_string())),
+            Err(err) => Err(Error::SimulatorCommandFailed(err.to_string())),
         }
     }
 

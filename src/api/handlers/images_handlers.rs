@@ -6,18 +6,19 @@ use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
 use mongodb::bson::doc;
+use mongodb::bson::oid::ObjectId;
 use tracing::warn;
+use warp::{Buf, hyper};
 use warp::multipart::{FormData, Part};
-use warp::{hyper, Buf};
 
 use crate::api::error_rejection::ErrorRejection;
-use crate::data::{Image, Repository};
+use crate::data::{Image, ImageDTO, Repository};
 use crate::domain::DockerImage;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let images = repository.list::<Image>().await?;
 
-    Ok(warp::reply::json(&images))
+    Ok(warp::reply::json(&images.into_iter().map(ImageDTO::from).collect::<Vec<_>>()))
 }
 
 pub async fn create(
@@ -89,7 +90,7 @@ pub async fn create(
 
     let image = repository.create(image).await?;
 
-    Ok(warp::reply::json(&image))
+    Ok(warp::reply::json(&ImageDTO::from(image)))
 }
 
 async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejection> {
@@ -120,4 +121,11 @@ async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejec
     })?;
 
     Ok(image)
+}
+
+pub async fn find_by_id(repository: Repository, image_id: ObjectId) -> Result<warp::reply::Json, warp::Rejection> {
+    match repository.find_by_id::<Image>(&image_id).await? {
+        Some(image) => Ok(warp::reply::json(&ImageDTO::from(image))),
+        None => Err(ErrorRejection::reject("Image not found", hyper::StatusCode::NOT_FOUND))
+    }
 }

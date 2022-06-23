@@ -21,13 +21,19 @@ pub fn images_routes(
         .and_then(images_handlers::list);
 
     let create = common
+        .clone()
         .and(warp::post())
         .and(warp::path::end())
         .and(with_docker(docker))
         .and(warp::filters::multipart::form())
         .and_then(images_handlers::create);
 
-    list.or(create)
+    let find_by_id = common
+        .and(warp::get())
+        .and(warp::path::param())
+        .and_then(images_handlers::find_by_id);
+
+    list.or(create).or(find_by_id)
 }
 
 fn with_repository(

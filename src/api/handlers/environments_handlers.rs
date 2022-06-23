@@ -5,11 +5,12 @@ use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Repository},
 };
+use crate::data::EnvironmentDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let environments = repository.list::<Environment>().await?;
 
-    Ok(warp::reply::json(&environments))
+    Ok(warp::reply::json(&environments.into_iter().map(EnvironmentDTO::from).collect::<Vec<_>>()))
 }
 
 pub async fn create(
@@ -29,5 +30,5 @@ pub async fn create(
 
     let environment = repository.create(environment).await?;
 
-    Ok(warp::reply::json(&environment))
+    Ok(warp::reply::json(&EnvironmentDTO::from(environment)))
 }

@@ -5,6 +5,23 @@ use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct EnvironmentDTO {
+    #[serde(alias = "_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    name: String,
+}
+
+impl From<Environment> for EnvironmentDTO {
+    fn from(environment: Environment) -> Self {
+        Self {
+            id: environment.id.as_ref().map(ToString::to_string),
+            name: environment.name,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Environment {
     #[serde(alias = "_id")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -16,6 +33,10 @@ pub struct Environment {
 impl Environment {
     pub fn new(name: String) -> Environment {
         Environment { id: None, name }
+    }
+
+    pub fn id(&self) -> Option<&ObjectId> {
+        self.id.as_ref()
     }
 
     pub fn name(&self) -> &str {

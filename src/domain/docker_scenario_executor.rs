@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bollard::{container::LogOutput, Docker};
 use futures::{future::try_join_all, SinkExt};
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
@@ -27,17 +28,17 @@ impl DockerScenarioExecutor {
     ) -> Result<(), Error> {
         let steps = scenario.steps();
 
-        let mut unique_simulators = steps
+        let mut unique_images = steps
             .iter()
-            .map(|step| step.simulator_id)
+            .map(|step| step.image_id)
             .collect::<Vec<_>>();
-        unique_simulators.dedup();
+        unique_images.dedup();
 
         let (tx, mut rx) = mpsc::unbounded_channel();
         let tx = Arc::new(tx);
 
-        let simulator_id_to_running_simulator = instantiate_simulators(
-            unique_simulators,
+        let image_id_to_running_simulator = instantiate_simulators(
+            unique_images,
             repository,
             docker.clone(),
             environment,
@@ -45,7 +46,7 @@ impl DockerScenarioExecutor {
         )
         .await?;
 
-        let running_simulators = simulator_id_to_running_simulator
+        let running_simulators = image_id_to_running_simulator
             .values()
             .cloned()
             .collect::<Vec<_>>();
@@ -65,8 +66,8 @@ impl DockerScenarioExecutor {
             .map(|step| {
                 (
                     step,
-                    simulator_id_to_running_simulator
-                        .get(&step.simulator_id)
+                    image_id_to_running_simulator
+                        .get(&step.image_id)
                         .unwrap(),
                 )
             })
@@ -90,20 +91,23 @@ impl DockerScenarioExecutor {
 }
 
 async fn instantiate_simulators(
-    simulators: Vec<ObjectId>,
+    images: Vec<ObjectId>,
     repository: Repository,
     docker: Arc<Docker>,
     environment: &Environment,
     tx: Arc<UnboundedSender<LogOutput>>,
 ) -> Result<HashMap<ObjectId, RunningDockerSimulator>, Error> {
-    let mut simulator_id_to_running_docker_simulator = HashMap::new();
+    let mut image_id_to_running_docker_simulator = HashMap::new();
 
-    for simulator_id in simulators {
-        let simulator = repository.find_by_id::<Simulator>(&simulator_id).await?;
+    for image_id in images {
+        let simulator = repository.find::<Simulator>(doc! {
+            "image_id": image_id,
+            "environment_id": environment.id().unwrap()
+        }).await?;
 
-        let simulator = match simulator {
+        let simulator = match simulator.first() {
             Some(simulator) => simulator,
-            None => return Err(Error::SimulatorNotFound(simulator_id.to_string())),
+            None => return Err(Error::SimulatorNotFound(image_id.to_string())),
         };
 
         let image = repository.find_by_id(simulator.image_id()).await?;
@@ -114,14 +118,14 @@ async fn instantiate_simulators(
         };
 
         let docker_container =
-            DockerSimulator::create(docker.clone(), environment, &simulator, &image).await?;
+            DockerSimulator::create(docker.clone(), environment, simulator, &image).await?;
 
         let docker_simulator = docker_container.start(Some(tx.clone())).await?;
 
-        simulator_id_to_running_docker_simulator.insert(simulator_id, docker_simulator);
+        image_id_to_running_docker_simulator.insert(image_id, docker_simulator);
     }
 
-    Ok(simulator_id_to_running_docker_simulator)
+    Ok(image_id_to_running_docker_simulator)
 }
 
 async fn wait_for_simulators_to_be_ready(

@@ -27,8 +27,8 @@ async fn format_database(database: &Database) -> Result<(), Error> {
 async fn populate_database(database: &Database) -> Result<(), Error> {
     let environment_id = initialize_environments(database).await?;
     let image_id = initialize_images(database).await?;
-    let simulator_id = initialize_simulators(database, environment_id, image_id).await?;
-    initialize_scenarios(database, simulator_id).await?;
+    initialize_simulators(database, environment_id, image_id).await?;
+    initialize_scenarios(database, image_id).await?;
 
     Ok(())
 }
@@ -73,7 +73,7 @@ async fn initialize_simulators(
     database: &Database,
     environment_id: ObjectId,
     image_id: ObjectId,
-) -> Result<ObjectId, Error> {
+) -> Result<(), Error> {
     let simulators = database.collection("Simulators");
 
     let simulator = Simulator::new(
@@ -83,15 +83,12 @@ async fn initialize_simulators(
         HashMap::from([(String::from("greeting"), String::from("Hello"))]),
     );
 
-    let result = simulators.insert_one(simulator, None).await?;
+    simulators.insert_one(simulator, None).await?;
 
-    Ok(result
-        .inserted_id
-        .as_object_id()
-        .expect("Failed to get ObjectId for simulator"))
+    Ok(())
 }
 
-async fn initialize_scenarios(database: &Database, simulator_id: ObjectId) -> Result<(), Error> {
+async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result<(), Error> {
     let scenarios = database.collection("Scenarios");
 
     let scenario = Scenario::new(
@@ -99,7 +96,7 @@ async fn initialize_scenarios(database: &Database, simulator_id: ObjectId) -> Re
         String::from("This is my scenario"),
         vec![
             Step {
-                simulator_id,
+                image_id,
                 command: Command {
                     name: String::from("test"),
                     description: String::from("This is a test command"),
@@ -108,7 +105,7 @@ async fn initialize_scenarios(database: &Database, simulator_id: ObjectId) -> Re
                 arguments: json!({ "name": "Rem113" }),
             },
             Step {
-                simulator_id,
+                image_id,
                 command: Command {
                     name: String::from("test"),
                     description: String::from("This is a test command"),
@@ -117,7 +114,7 @@ async fn initialize_scenarios(database: &Database, simulator_id: ObjectId) -> Re
                 arguments: json!({}),
             },
             Step {
-                simulator_id,
+                image_id,
                 command: Command {
                     name: String::from("test"),
                     description: String::from("This is a test command"),

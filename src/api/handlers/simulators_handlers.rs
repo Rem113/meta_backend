@@ -5,11 +5,12 @@ use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Image, Repository, Simulator},
 };
+use crate::data::SimulatorDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let simulators = repository.list::<Simulator>().await?;
 
-    Ok(warp::reply::json(&simulators))
+    Ok(warp::reply::json(&simulators.into_iter().map(SimulatorDTO::from).collect::<Vec<_>>()))
 }
 
 pub async fn create(
@@ -40,7 +41,7 @@ pub async fn create(
         (Some(_), Some(_)) => {
             let simulator = repository.create(simulator).await?;
 
-            Ok(warp::reply::json(&simulator))
+            Ok(warp::reply::json(&SimulatorDTO::from(simulator)))
         }
         (None, None) => Err(ErrorRejection::reject(
             "Environment and image not found",

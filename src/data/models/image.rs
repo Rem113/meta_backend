@@ -7,6 +7,25 @@ use serde::{Deserialize, Serialize};
 use super::Command;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ImageDTO {
+    #[serde(alias = "_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    tag: Tag,
+    commands: Vec<Command>,
+}
+
+impl From<Image> for ImageDTO {
+    fn from(image: Image) -> Self {
+        Self {
+            id: image.id.as_ref().map(ToString::to_string),
+            tag: image.tag,
+            commands: image.commands,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Image {
     #[serde(alias = "_id")]
     #[serde(skip_serializing_if = "Option::is_none")]

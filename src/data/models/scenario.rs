@@ -2,7 +2,28 @@ use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 use super::serializers::serialize_option_object_id;
-use crate::data::{repository::Document, Step};
+use crate::data::{repository::Document, Step, StepDTO};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ScenarioDTO {
+    #[serde(alias = "_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    name: String,
+    description: String,
+    steps: Vec<StepDTO>,
+}
+
+impl From<Scenario> for ScenarioDTO {
+    fn from(scenario: Scenario) -> Self {
+        Self {
+            id: scenario.id.as_ref().map(ToString::to_string),
+            name: scenario.name,
+            description: scenario.description,
+            steps: scenario.steps.into_iter().map(StepDTO::from).collect(),
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Scenario {

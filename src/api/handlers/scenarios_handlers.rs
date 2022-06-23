@@ -9,11 +9,12 @@ use crate::{
     data::{Environment, Repository, Scenario},
     domain::DockerScenarioExecutor,
 };
+use crate::data::ScenarioDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let scenarios = repository.list::<Scenario>().await?;
 
-    Ok(warp::reply::json(&scenarios))
+    Ok(warp::reply::json(&scenarios.into_iter().map(ScenarioDTO::from).collect::<Vec<_>>()))
 }
 
 pub async fn create(
@@ -33,17 +34,15 @@ pub async fn create(
 
     let scenario = repository.create(scenario).await?;
 
-    Ok(warp::reply::json(&scenario))
+    Ok(warp::reply::json(&ScenarioDTO::from(scenario)))
 }
 
 pub async fn find_by_id(
     repository: Repository,
-    id: ObjectId,
+    scenario_id: ObjectId,
 ) -> Result<warp::reply::Json, warp::Rejection> {
-    let option_scenario = repository.find_by_id::<Scenario>(&id).await?;
-
-    match option_scenario {
-        Some(scenario) => Ok(warp::reply::json(&scenario)),
+    match repository.find_by_id::<Scenario>(&scenario_id).await? {
+        Some(scenario) => Ok(warp::reply::json(&ScenarioDTO::from(scenario))),
         None => Err(ErrorRejection::reject(
             "Could not find scenario",
             hyper::StatusCode::NOT_FOUND,

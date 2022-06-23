@@ -9,7 +9,7 @@ where
     S: Serializer,
 {
     match option_object_id {
-        Some(id) => id.to_string().serialize(serializer),
+        Some(object_id) => object_id.serialize(serializer),
         None => serializer.serialize_none(),
     }
 }
@@ -18,5 +18,5 @@ pub fn serialize_object_id<S>(object_id: &ObjectId, serializer: S) -> Result<S::
 where
     S: Serializer,
 {
-    object_id.to_string().serialize(serializer)
+    object_id.serialize(serializer)
 }

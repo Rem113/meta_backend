@@ -36,6 +36,21 @@ pub async fn create(
     Ok(warp::reply::json(&scenario))
 }
 
+pub async fn find_by_id(
+    repository: Repository,
+    id: ObjectId,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    let option_scenario = repository.find_by_id::<Scenario>(&id).await?;
+
+    match option_scenario {
+        Some(scenario) => Ok(warp::reply::json(&scenario)),
+        None => Err(ErrorRejection::reject(
+            "Could not find scenario",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+    }
+}
+
 pub async fn run(
     repository: Repository,
     scenario_id: String,

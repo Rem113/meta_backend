@@ -26,6 +26,12 @@ pub fn scenarios_routes(
         .and(warp::body::json())
         .and_then(scenarios_handlers::create);
 
+    let find_by_id = common
+        .clone()
+        .and(warp::get())
+        .and(warp::path::param())
+        .and_then(scenarios_handlers::find_by_id);
+
     let run = common
         .and(warp::path("run"))
         .and(warp::path::param())
@@ -35,7 +41,7 @@ pub fn scenarios_routes(
         .and(warp::ws())
         .and_then(scenarios_handlers::run);
 
-    list.or(create).or(run)
+    list.or(create).or(find_by_id).or(run)
 }
 
 fn with_repository(

@@ -1,16 +1,18 @@
-use crate::api::error_rejection::ErrorRejection;
-use crate::data::{Image, Repository};
-use crate::domain::DockerImage;
+use std::collections::HashMap;
+use std::io::Read;
+use std::sync::Arc;
+
 use bollard::Docker;
 use bytes::BufMut;
 use futures::TryStreamExt;
 use mongodb::bson::doc;
-use std::collections::HashMap;
-use std::io::Read;
-use std::sync::Arc;
 use tracing::warn;
 use warp::multipart::{FormData, Part};
 use warp::{hyper, Buf};
+
+use crate::api::error_rejection::ErrorRejection;
+use crate::data::{Image, Repository};
+use crate::domain::DockerImage;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let images = repository.list::<Image>().await?;
@@ -54,7 +56,7 @@ pub async fn create(
     let image = parse_part_to_image(image_data_part).await?;
 
     let already_existing_image = repository
-        .find::<Image>(doc! {"name": &image.tag().name, "version": &image.tag().version})
+        .find::<Image>(doc! {"tag": {"name": &image.tag().name, "version": &image.tag().version}})
         .await?;
 
     if !already_existing_image.is_empty() {
@@ -103,12 +105,18 @@ async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejec
         .await
         .map_err(|error| {
             warn!("{:?}", error);
-            ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
+            ErrorRejection::reject(
+                &format!("Invalid image file: {:?}", error),
+                hyper::StatusCode::BAD_REQUEST,
+            )
         })?;
 
     let image = serde_json::from_str(&image_data).map_err(|error| {
         warn!("{:?}", error);
-        ErrorRejection::reject("Couldn't parse image data", hyper::StatusCode::BAD_REQUEST)
+        ErrorRejection::reject(
+            &format!("Couldn't parse image data: {:?}", error),
+            hyper::StatusCode::BAD_REQUEST,
+        )
     })?;
 
     Ok(image)

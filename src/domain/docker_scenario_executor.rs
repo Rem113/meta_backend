@@ -75,8 +75,13 @@ impl DockerScenarioExecutor {
 
         if let Err(error) = run_scenario(&step_data, tx.clone()).await {
             match error {
-                Error::SimulatorCommandFailed { message, status } => tx
+                Error::SimulatorCommandFailed {
+                    step,
+                    message,
+                    status,
+                } => tx
                     .send(ScenarioPlayingEvent::StepFailed {
+                        step,
                         message,
                         status: status.as_u16(),
                     })
@@ -172,26 +177,30 @@ async fn run_scenario(
     step_data: &[(&Step, &RunningDockerSimulator)],
     tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
 ) -> Result<(), Error> {
-    for (step, running_docker_simulator) in step_data.iter() {
+    for (i, (step, running_docker_simulator)) in step_data.iter().enumerate() {
         trace!(
-            "Command: {:?}, Arguments: {:?}",
+            "Step #{}: Command: {:?}, Arguments: {:?}",
+            i + 1,
             step.command,
             step.arguments
         );
 
         let command_result = running_docker_simulator
-            .execute_command(&step.command.path, &step.arguments)
+            .execute_command(i + 1, &step.command.path, &step.arguments)
             .await;
 
         match command_result {
             Ok(response) => {
-                tx.send(ScenarioPlayingEvent::StepPassed { message: response })
-                    .ok();
+                tx.send(ScenarioPlayingEvent::StepPassed {
+                    step: i + 1,
+                    message: response,
+                })
+                .ok();
             }
             Err(error) => {
-                if let Error::SimulatorCommandFailed { message, status } = error {
-                    return Err(Error::SimulatorCommandFailed { message, status });
-                };
+                if matches!(error, Error::SimulatorCommandFailed { .. }) {
+                    return Err(error);
+                }
             }
         };
 

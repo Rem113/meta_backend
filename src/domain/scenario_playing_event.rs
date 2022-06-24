@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum ScenarioPlayingEvent {
     StepPassed {
+        step: usize,
         message: String,
     },
     StepFailed {
+        step: usize,
         message: String,
         status: u16,
     },

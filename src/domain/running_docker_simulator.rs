@@ -38,6 +38,7 @@ impl RunningDockerSimulator {
 
     pub async fn execute_command(
         &self,
+        step: usize,
         command: &str,
         arguments: &serde_json::Value,
     ) -> Result<String, Error> {
@@ -55,10 +56,12 @@ impl RunningDockerSimulator {
 
                     match response_text {
                         Ok(text) => Err(Error::SimulatorCommandFailed {
+                            step,
                             message: text,
                             status: response_status,
                         }),
                         Err(_) => Err(Error::SimulatorCommandFailed {
+                            step,
                             message: String::from("Could not get error message"),
                             status: response_status,
                         }),
@@ -66,6 +69,7 @@ impl RunningDockerSimulator {
                 }
             }
             Err(error) => Err(Error::SimulatorCommandFailed {
+                step,
                 message: error.to_string(),
                 status: hyper::StatusCode::INTERNAL_SERVER_ERROR,
             }),

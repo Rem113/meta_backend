@@ -10,6 +10,7 @@ pub enum Error {
     SimulatorNotReady(String),
     #[error("Error {status}: {message}")]
     SimulatorCommandFailed {
+        step: usize,
         message: String,
         status: hyper::StatusCode,
     },

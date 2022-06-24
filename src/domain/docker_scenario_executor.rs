@@ -28,10 +28,7 @@ impl DockerScenarioExecutor {
     ) -> Result<(), Error> {
         let steps = scenario.steps();
 
-        let mut unique_images = steps
-            .iter()
-            .map(|step| step.image_id)
-            .collect::<Vec<_>>();
+        let mut unique_images = steps.iter().map(|step| step.image_id).collect::<Vec<_>>();
         unique_images.dedup();
 
         let (tx, mut rx) = mpsc::unbounded_channel();
@@ -66,9 +63,7 @@ impl DockerScenarioExecutor {
             .map(|step| {
                 (
                     step,
-                    image_id_to_running_simulator
-                        .get(&step.image_id)
-                        .unwrap(),
+                    image_id_to_running_simulator.get(&step.image_id).unwrap(),
                 )
             })
             .collect::<Vec<_>>();
@@ -100,10 +95,12 @@ async fn instantiate_simulators(
     let mut image_id_to_running_docker_simulator = HashMap::new();
 
     for image_id in images {
-        let simulator = repository.find::<Simulator>(doc! {
-            "image_id": image_id,
-            "environment_id": environment.id().unwrap()
-        }).await?;
+        let simulator = repository
+            .find::<Simulator>(doc! {
+                "imageId": image_id,
+                "environmentId": environment.id().unwrap()
+            })
+            .await?;
 
         let simulator = match simulator.first() {
             Some(simulator) => simulator,

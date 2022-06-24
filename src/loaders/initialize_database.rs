@@ -36,7 +36,10 @@ async fn populate_database(database: &Database) -> Result<(), Error> {
 async fn initialize_environments(database: &Database) -> Result<ObjectId, Error> {
     let environments = database.collection("Environments");
 
-    let environment = Environment::new(String::from("dev"), String::from("Runs in the dev environment"));
+    let environment = Environment::new(
+        String::from("dev"),
+        String::from("Runs in the dev environment"),
+    );
 
     let result = environments.insert_one(environment, None).await?;
 
@@ -93,7 +96,9 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
 
     let scenario = Scenario::new(
         String::from("Steps are run until the first failure"),
-        String::from("This scenario checks that steps after the first failing step are not run by Meta"),
+        String::from(
+            "This scenario checks that steps after the first failing step are not run by Meta",
+        ),
         vec![
             Step {
                 image_id,
@@ -108,7 +113,9 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
                 image_id,
                 command: Command {
                     name: String::from("Test"),
-                    description: String::from("This is a test command without the parameter name. Should fail"),
+                    description: String::from(
+                        "This is a test command without the parameter name. Should fail",
+                    ),
                     path: String::from("test"),
                 },
                 arguments: json!({}),

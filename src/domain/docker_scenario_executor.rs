@@ -1,14 +1,14 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use bollard::{container::LogOutput, Docker};
+use bollard::Docker;
 use futures::{future::try_join_all, SinkExt};
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
-
 use warp::ws::Message;
 
+use crate::domain::scenario_playing_event::ScenarioPlayingEvent;
 use crate::{
     data::{Environment, Repository, Scenario, Simulator, Step},
     domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
@@ -52,7 +52,12 @@ impl DockerScenarioExecutor {
 
         tokio::spawn(async move {
             while let Some(log) = rx.recv().await {
-                if let Err(err) = web_socket.send(Message::text(format!("{:?}", log))).await {
+                if let Err(err) = web_socket
+                    .send(Message::text(
+                        serde_json::to_string(&log).unwrap_or_default(),
+                    ))
+                    .await
+                {
                     warn!("{:?}", err);
                 }
             }
@@ -69,10 +74,15 @@ impl DockerScenarioExecutor {
             .collect::<Vec<_>>();
 
         if let Err(error) = run_scenario(&step_data, tx.clone()).await {
-            tx.send(LogOutput::StdErr {
-                message: error.to_string().into(),
-            })
-            .ok();
+            match error {
+                Error::SimulatorCommandFailed { message, status } => tx
+                    .send(ScenarioPlayingEvent::StepFailed {
+                        message,
+                        status: status.as_u16(),
+                    })
+                    .ok(),
+                _ => Some(()),
+            };
         }
 
         for running_docker_simulator in running_simulators {
@@ -90,7 +100,7 @@ async fn instantiate_simulators(
     repository: Repository,
     docker: Arc<Docker>,
     environment: &Environment,
-    tx: Arc<UnboundedSender<LogOutput>>,
+    tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
 ) -> Result<HashMap<ObjectId, RunningDockerSimulator>, Error> {
     let mut image_id_to_running_docker_simulator = HashMap::new();
 
@@ -160,30 +170,28 @@ async fn wait_for_simulators_to_be_ready(
 
 async fn run_scenario(
     step_data: &[(&Step, &RunningDockerSimulator)],
-    tx: Arc<UnboundedSender<LogOutput>>,
+    tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
 ) -> Result<(), Error> {
-    for (step, running_simulator) in step_data.iter() {
+    for (step, running_docker_simulator) in step_data.iter() {
         trace!(
             "Command: {:?}, Arguments: {:?}",
             step.command,
             step.arguments
         );
 
-        let command_result = running_simulator
+        let command_result = running_docker_simulator
             .execute_command(&step.command.path, &step.arguments)
             .await;
 
         match command_result {
-            Ok(response) => tx
-                .send(LogOutput::StdOut {
-                    message: response.into(),
-                })
-                .ok(),
-            Err(err) => {
-                return Err(Error::SimulatorCommandFailed(format!(
-                    "Step failed with error: {:?}",
-                    err
-                )))
+            Ok(response) => {
+                tx.send(ScenarioPlayingEvent::StepPassed { message: response })
+                    .ok();
+            }
+            Err(error) => {
+                if let Error::SimulatorCommandFailed { message, status } = error {
+                    return Err(Error::SimulatorCommandFailed { message, status });
+                };
             }
         };
 

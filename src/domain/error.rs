@@ -1,3 +1,5 @@
+use warp::hyper;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("{0}")]
@@ -6,8 +8,11 @@ pub enum Error {
     Data(#[from] crate::data::Error),
     #[error("{0}")]
     SimulatorNotReady(String),
-    #[error("{0}")]
-    SimulatorCommandFailed(String),
+    #[error("Error {status}: {message}")]
+    SimulatorCommandFailed {
+        message: String,
+        status: hyper::StatusCode,
+    },
     #[error("Simulator not found. Simulator ID: {0:#?}")]
     SimulatorNotFound(String),
     #[error("Image not found. Image ID: {0:#?}")]

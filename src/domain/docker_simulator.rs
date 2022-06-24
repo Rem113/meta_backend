@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::data::{Environment, Image, Simulator};
 use bollard::container::{LogOutput, LogsOptions, RemoveContainerOptions};
 use bollard::{
     container::{Config, CreateContainerOptions, StartContainerOptions},
@@ -10,10 +9,14 @@ use bollard::{
 use futures::stream::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
+use crate::data::{Environment, Image, Simulator};
+use crate::domain::scenario_playing_event::ScenarioPlayingEvent;
+
 use super::{running_docker_simulator::RunningDockerSimulator, Error};
 
 pub struct DockerSimulator {
-    name: String,
+    container_name: String,
+    simulator_name: String,
     docker: Arc<Docker>,
 }
 
@@ -24,11 +27,13 @@ impl DockerSimulator {
         simulator: &Simulator,
         image: &Image,
     ) -> Result<DockerSimulator, Error> {
-        let name = format!("{}-{}", environment.name(), simulator.name());
+        let container_name = format!("{}-{}", environment.name(), simulator.name());
 
         docker
             .create_container(
-                Some(CreateContainerOptions { name: &name }),
+                Some(CreateContainerOptions {
+                    name: &container_name,
+                }),
                 Config {
                     attach_stdout: Some(true),
                     attach_stderr: Some(true),
@@ -49,25 +54,29 @@ impl DockerSimulator {
             )
             .await?;
 
-        Ok(DockerSimulator { name, docker })
+        Ok(DockerSimulator {
+            container_name,
+            simulator_name: simulator.name().to_string(),
+            docker,
+        })
     }
 
     pub async fn start(
         self,
-        tx: Option<Arc<UnboundedSender<LogOutput>>>,
+        tx: Option<Arc<UnboundedSender<ScenarioPlayingEvent>>>,
     ) -> Result<RunningDockerSimulator, Error> {
         self.docker
-            .start_container(self.name(), None::<StartContainerOptions<String>>)
+            .start_container(self.container_name(), None::<StartContainerOptions<String>>)
             .await?;
 
-        match get_exposed_port_for_container(self.docker.clone(), self.name()).await {
+        match get_exposed_port_for_container(self.docker.clone(), self.container_name()).await {
             Ok(port) => {
                 if let Some(sender) = tx {
                     self.attach_logs(sender);
                 };
 
                 Ok(RunningDockerSimulator::new(
-                    self.name().to_owned(),
+                    self.container_name().to_owned(),
                     port,
                     self.docker,
                 ))
@@ -75,7 +84,7 @@ impl DockerSimulator {
             Err(_) => {
                 self.docker
                     .remove_container(
-                        self.name(),
+                        self.container_name(),
                         Some(RemoveContainerOptions {
                             force: true,
                             ..Default::default()
@@ -91,14 +100,15 @@ impl DockerSimulator {
         }
     }
 
-    fn attach_logs(&self, tx: Arc<UnboundedSender<LogOutput>>) {
+    fn attach_logs(&self, tx: Arc<UnboundedSender<ScenarioPlayingEvent>>) {
         let docker = self.docker.clone();
-        let name = self.name().to_owned();
+        let container_name = self.container_name().to_owned();
+        let simulator_name = self.simulator_name().to_owned();
 
         tokio::spawn(async move {
             docker
                 .logs(
-                    &name,
+                    &container_name,
                     Some(LogsOptions::<String> {
                         follow: true,
                         stdout: true,
@@ -109,14 +119,35 @@ impl DockerSimulator {
                 )
                 .filter_map(|result| async { result.ok() })
                 .for_each(|log| async {
-                    tx.send(log).ok();
+                    match log {
+                        LogOutput::StdOut { message } | LogOutput::Console { message } => {
+                            tx.send(ScenarioPlayingEvent::LogReceived {
+                                simulator_name: simulator_name.clone(),
+                                message: String::from_utf8_lossy(message.as_ref()).into(),
+                                is_error: false,
+                            })
+                        }
+                        LogOutput::StdErr { message } => {
+                            tx.send(ScenarioPlayingEvent::LogReceived {
+                                simulator_name: simulator_name.clone(),
+                                message: String::from_utf8_lossy(message.as_ref()).into(),
+                                is_error: true,
+                            })
+                        }
+                        _ => Ok(()),
+                    }
+                    .ok();
                 })
                 .await;
         });
     }
 
-    pub fn name(&self) -> &String {
-        &self.name
+    pub fn container_name(&self) -> &String {
+        &self.container_name
+    }
+
+    pub fn simulator_name(&self) -> &String {
+        &self.simulator_name
     }
 }
 

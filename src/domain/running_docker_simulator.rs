@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bollard::container::RemoveContainerOptions;
 use bollard::Docker;
+use warp::hyper;
 
 use super::Error;
 
@@ -53,18 +54,21 @@ impl RunningDockerSimulator {
                     let response_text = response.text().await;
 
                     match response_text {
-                        Ok(text) => Err(Error::SimulatorCommandFailed(format!(
-                            "{}: {}",
-                            response_status, text
-                        ))),
-                        Err(error) => Err(Error::SimulatorCommandFailed(format!(
-                            "{}: {}",
-                            response_status, error
-                        ))),
+                        Ok(text) => Err(Error::SimulatorCommandFailed {
+                            message: text,
+                            status: response_status,
+                        }),
+                        Err(_) => Err(Error::SimulatorCommandFailed {
+                            message: String::from("Could not get error message"),
+                            status: response_status,
+                        }),
                     }
                 }
             }
-            Err(err) => Err(Error::SimulatorCommandFailed(err.to_string())),
+            Err(error) => Err(Error::SimulatorCommandFailed {
+                message: error.to_string(),
+                status: hyper::StatusCode::INTERNAL_SERVER_ERROR,
+            }),
         }
     }
 

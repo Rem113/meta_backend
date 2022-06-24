@@ -10,6 +10,7 @@ pub struct EnvironmentDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<String>,
     name: String,
+    description: String,
 }
 
 impl From<Environment> for EnvironmentDTO {
@@ -17,6 +18,7 @@ impl From<Environment> for EnvironmentDTO {
         Self {
             id: environment.id.as_ref().map(ToString::to_string),
             name: environment.name,
+            description: environment.description,
         }
     }
 }
@@ -28,11 +30,16 @@ pub struct Environment {
     #[serde(serialize_with = "serialize_option_object_id")]
     id: Option<ObjectId>,
     name: String,
+    description: String,
 }
 
 impl Environment {
-    pub fn new(name: String) -> Environment {
-        Environment { id: None, name }
+    pub fn new(name: String, description: String) -> Environment {
+        Environment {
+            id: None,
+            name,
+            description,
+        }
     }
 
     pub fn id(&self) -> Option<&ObjectId> {

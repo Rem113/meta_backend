@@ -36,7 +36,7 @@ async fn populate_database(database: &Database) -> Result<(), Error> {
 async fn initialize_environments(database: &Database) -> Result<ObjectId, Error> {
     let environments = database.collection("Environments");
 
-    let environment = Environment::new(String::from("dev"));
+    let environment = Environment::new(String::from("dev"), String::from("Runs in the dev environment"));
 
     let result = environments.insert_one(environment, None).await?;
 
@@ -55,7 +55,7 @@ async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
             version: String::from("1.0.0"),
         },
         vec![Command {
-            name: String::from("test"),
+            name: String::from("Test"),
             description: String::from("This is a test command"),
             path: String::from("test"),
         }],
@@ -92,14 +92,14 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
     let scenarios = database.collection("Scenarios");
 
     let scenario = Scenario::new(
-        String::from("My scenario"),
-        String::from("This is my scenario"),
+        String::from("Steps are run until the first failure"),
+        String::from("This scenario checks that steps after the first failing step are not run by Meta"),
         vec![
             Step {
                 image_id,
                 command: Command {
-                    name: String::from("test"),
-                    description: String::from("This is a test command"),
+                    name: String::from("Test"),
+                    description: String::from("This is a test command that takes a parameter name"),
                     path: String::from("test"),
                 },
                 arguments: json!({ "name": "Rem113" }),
@@ -107,8 +107,8 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
             Step {
                 image_id,
                 command: Command {
-                    name: String::from("test"),
-                    description: String::from("This is a test command"),
+                    name: String::from("Test"),
+                    description: String::from("This is a test command without the parameter name. Should fail"),
                     path: String::from("test"),
                 },
                 arguments: json!({}),
@@ -116,8 +116,8 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
             Step {
                 image_id,
                 command: Command {
-                    name: String::from("test"),
-                    description: String::from("This is a test command"),
+                    name: String::from("Test"),
+                    description: String::from("This is a test command that should never run"),
                     path: String::from("test"),
                 },
                 arguments: json!({ "name": "Ninja" }),

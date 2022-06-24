@@ -1,16 +1,21 @@
 use mongodb::bson::doc;
 use warp::hyper;
 
+use crate::data::SimulatorDTO;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Image, Repository, Simulator},
 };
-use crate::data::SimulatorDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let simulators = repository.list::<Simulator>().await?;
 
-    Ok(warp::reply::json(&simulators.into_iter().map(SimulatorDTO::from).collect::<Vec<_>>()))
+    Ok(warp::reply::json(
+        &simulators
+            .into_iter()
+            .map(SimulatorDTO::from)
+            .collect::<Vec<_>>(),
+    ))
 }
 
 pub async fn create(
@@ -33,9 +38,7 @@ pub async fn create(
     let environment = repository
         .find_by_id::<Environment>(simulator.environment_id())
         .await?;
-    let image = repository
-        .find_by_id::<Image>(simulator.image_id())
-        .await?;
+    let image = repository.find_by_id::<Image>(simulator.image_id()).await?;
 
     match (environment, image) {
         (Some(_), Some(_)) => {

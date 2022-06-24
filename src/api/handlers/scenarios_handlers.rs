@@ -4,17 +4,22 @@ use bollard::Docker;
 use mongodb::bson::{doc, oid::ObjectId};
 use warp::hyper;
 
+use crate::data::ScenarioDTO;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Repository, Scenario},
     domain::DockerScenarioExecutor,
 };
-use crate::data::ScenarioDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let scenarios = repository.list::<Scenario>().await?;
 
-    Ok(warp::reply::json(&scenarios.into_iter().map(ScenarioDTO::from).collect::<Vec<_>>()))
+    Ok(warp::reply::json(
+        &scenarios
+            .into_iter()
+            .map(ScenarioDTO::from)
+            .collect::<Vec<_>>(),
+    ))
 }
 
 pub async fn create(

@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 
 use bollard::Docker;
@@ -10,7 +11,26 @@ pub async fn initialize_docker() -> Result<Docker, Error> {
     let docker = bollard::Docker::connect_with_local_defaults()?;
 
     format_image_repository(docker.clone()).await?;
-    add_test_sim(docker.clone()).await?;
+
+    add_simulator(
+        docker.clone(),
+        "greeting-sim.tar.gz",
+        Tag {
+            name: String::from("greeting-sim"),
+            version: String::from("1.0.0"),
+        },
+    )
+    .await?;
+
+    add_simulator(
+        docker.clone(),
+        "manager.tar.gz",
+        Tag {
+            name: String::from("manager"),
+            version: String::from("1.0.0"),
+        },
+    )
+    .await?;
 
     Ok(docker)
 }
@@ -43,20 +63,12 @@ async fn format_image_repository(docker: Docker) -> Result<(), Error> {
     Ok(())
 }
 
-async fn add_test_sim(docker: Docker) -> Result<(), Error> {
-    let image_file = tokio::fs::read("test-sim.tar.gz")
+async fn add_simulator(docker: Docker, path: impl AsRef<Path>, tag: Tag) -> Result<(), Error> {
+    let image_file = tokio::fs::read(path)
         .await
         .map_err(|_| Error::Docker(String::from("Unexpected error while reading image file")))?;
 
-    DockerImage::create(
-        Arc::new(docker),
-        Tag {
-            name: String::from("test-sim"),
-            version: String::from("1.0.0"),
-        },
-        image_file,
-    )
-    .await?;
+    DockerImage::create(Arc::new(docker), tag, image_file).await?;
 
     Ok(())
 }

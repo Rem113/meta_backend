@@ -28,8 +28,18 @@ impl DockerScenarioExecutor {
     ) -> Result<(), Error> {
         let steps = scenario.steps();
 
-        let mut unique_images = steps.iter().map(|step| step.image_id).collect::<Vec<_>>();
-        unique_images.dedup();
+        let unique_images =
+            steps
+                .iter()
+                .map(|step| step.image_id)
+                .fold(Vec::new(), |mut accumulator, current| {
+                    if accumulator.contains(&current) {
+                        accumulator
+                    } else {
+                        accumulator.push(current);
+                        accumulator
+                    }
+                });
 
         let (tx, mut rx) = mpsc::unbounded_channel();
         let tx = Arc::new(tx);

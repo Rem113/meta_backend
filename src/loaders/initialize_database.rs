@@ -26,9 +26,10 @@ async fn format_database(database: &Database) -> Result<(), Error> {
 
 async fn populate_database(database: &Database) -> Result<(), Error> {
     let environment_id = initialize_environments(database).await?;
-    let image_id = initialize_images(database).await?;
-    initialize_simulators(database, environment_id, image_id).await?;
-    initialize_scenarios(database, image_id).await?;
+    let (greeting_sim_id, manager_id) = initialize_images(database).await?;
+    initialize_greeting_simulator(database, environment_id, greeting_sim_id).await?;
+    initialize_manager(database, environment_id, manager_id).await?;
+    initialize_scenarios(database, greeting_sim_id, manager_id).await?;
 
     Ok(())
 }
@@ -49,30 +50,49 @@ async fn initialize_environments(database: &Database) -> Result<ObjectId, Error>
         .expect("Failed to get ObjectId for environment"))
 }
 
-async fn initialize_images(database: &Database) -> Result<ObjectId, Error> {
+async fn initialize_images(database: &Database) -> Result<(ObjectId, ObjectId), Error> {
     let images = database.collection("Images");
 
-    let image = Image::new(
+    let greeting_sim_image = Image::new(
         Tag {
-            name: String::from("test-sim"),
+            name: String::from("greeting-sim"),
             version: String::from("1.0.0"),
         },
         vec![Command {
-            name: String::from("Test"),
-            description: String::from("This is a test command"),
-            path: String::from("test"),
+            name: String::from("Greet"),
+            description: String::from("This command takes a name as a parameter, and returns a greeting for the specified name"),
+            path: String::from("greet"),
         }],
     );
 
-    let result = images.insert_one(image, None).await?;
+    let manager_image = Image::new(
+        Tag {
+            name: String::from("manager"),
+            version: String::from("1.0.0"),
+        },
+        vec![Command {
+            name: String::from("Sleep"),
+            description: String::from("This command takes a duration as a parameter, and sleeps for the specified duration"),
+            path: String::from("sleep"),
+        }]
+    );
 
-    Ok(result
-        .inserted_id
-        .as_object_id()
-        .expect("Failed to get ObjectId for image"))
+    let greeting_sim_insert_result = images.insert_one(greeting_sim_image, None).await?;
+    let manager_insert_result = images.insert_one(manager_image, None).await?;
+
+    Ok((
+        greeting_sim_insert_result
+            .inserted_id
+            .as_object_id()
+            .expect("Failed to get ObjectId for greeting-sim image"),
+        manager_insert_result
+            .inserted_id
+            .as_object_id()
+            .expect("Failed to get ObjectId for manager image"),
+    ))
 }
 
-async fn initialize_simulators(
+async fn initialize_greeting_simulator(
     database: &Database,
     environment_id: ObjectId,
     image_id: ObjectId,
@@ -80,10 +100,10 @@ async fn initialize_simulators(
     let simulators = database.collection("Simulators");
 
     let simulator = Simulator::new(
-        String::from("test-sim"),
+        String::from("greeting-sim"),
         environment_id,
         image_id,
-        HashMap::from([(String::from("greeting"), String::from("Hello"))]),
+        HashMap::from([(String::from("GREETING"), String::from("Hey"))]),
     );
 
     simulators.insert_one(simulator, None).await?;
@@ -91,7 +111,30 @@ async fn initialize_simulators(
     Ok(())
 }
 
-async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result<(), Error> {
+async fn initialize_manager(
+    database: &Database,
+    environment_id: ObjectId,
+    image_id: ObjectId,
+) -> Result<(), Error> {
+    let simulators = database.collection("Simulators");
+
+    let simulator = Simulator::new(
+        String::from("manager"),
+        environment_id,
+        image_id,
+        HashMap::new(),
+    );
+
+    simulators.insert_one(simulator, None).await?;
+
+    Ok(())
+}
+
+async fn initialize_scenarios(
+    database: &Database,
+    greeting_sim_image_id: ObjectId,
+    manager_image_id: ObjectId,
+) -> Result<(), Error> {
     let scenarios = database.collection("Scenarios");
 
     let scenario = Scenario::new(
@@ -101,31 +144,42 @@ async fn initialize_scenarios(database: &Database, image_id: ObjectId) -> Result
         ),
         vec![
             Step {
-                image_id,
+                image_id: greeting_sim_image_id,
                 command: Command {
-                    name: String::from("Test"),
-                    description: String::from("This is a test command that takes a parameter name"),
-                    path: String::from("test"),
+                    name: String::from("Greet"),
+                    description: String::from("Checks that the greeting is correct"),
+                    path: String::from("greet"),
                 },
                 arguments: json!({ "name": "Rem113" }),
             },
             Step {
-                image_id,
+                image_id: manager_image_id,
                 command: Command {
-                    name: String::from("Test"),
+                    name: String::from("Sleep"),
+                    description: String::from("Waits for 5 seconds"),
+                    path: String::from("sleep"),
+                },
+                arguments: json!({ "duration": 5000 }),
+            },
+            Step {
+                image_id: greeting_sim_image_id,
+                command: Command {
+                    name: String::from("Greet"),
                     description: String::from(
-                        "This is a test command without the parameter name. Should fail",
+                        "This command is missing the name parameter, so it should fail",
                     ),
-                    path: String::from("test"),
+                    path: String::from("greet"),
                 },
                 arguments: json!({}),
             },
             Step {
-                image_id,
+                image_id: greeting_sim_image_id,
                 command: Command {
-                    name: String::from("Test"),
-                    description: String::from("This is a test command that should never run"),
-                    path: String::from("test"),
+                    name: String::from("Greet"),
+                    description: String::from(
+                        "Because the last step should fail, this command should never be run",
+                    ),
+                    path: String::from("greet"),
                 },
                 arguments: json!({ "name": "Ninja" }),
             },

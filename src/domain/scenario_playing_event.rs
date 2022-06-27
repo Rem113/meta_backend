@@ -1,3 +1,4 @@
+use crate::domain::log_message::LogMessage;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,10 +15,7 @@ pub enum ScenarioPlayingEvent {
         status: u16,
     },
     LogReceived {
-        #[serde(rename = "simulatorName")]
-        simulator_name: String,
-        message: String,
-        #[serde(rename = "isError")]
-        is_error: bool,
+        #[serde(rename = "logMessage")]
+        log_message: LogMessage,
     },
 }

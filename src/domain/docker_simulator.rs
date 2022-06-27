@@ -8,10 +8,12 @@ use bollard::{
     models::HostConfig,
     Docker,
 };
+use chrono::Local;
 use futures::stream::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::data::{Environment, Image, Simulator};
+use crate::domain::log_message::LogMessage;
 use crate::domain::scenario_playing_event::ScenarioPlayingEvent;
 
 use super::{running_docker_simulator::RunningDockerSimulator, Error};
@@ -127,23 +129,32 @@ impl DockerSimulator {
                 )
                 .filter_map(|result| async { result.ok() })
                 .for_each(|log| async {
-                    match log {
+                    let (message, is_error) = match log {
+                        LogOutput::StdIn { .. } => return,
                         LogOutput::StdOut { message } | LogOutput::Console { message } => {
-                            tx.send(ScenarioPlayingEvent::LogReceived {
-                                simulator_name: simulator_name.clone(),
-                                message: String::from_utf8_lossy(message.as_ref()).into(),
-                                is_error: false,
-                            })
+                            (message, false)
                         }
-                        LogOutput::StdErr { message } => {
-                            tx.send(ScenarioPlayingEvent::LogReceived {
-                                simulator_name: simulator_name.clone(),
-                                message: String::from_utf8_lossy(message.as_ref()).into(),
-                                is_error: true,
-                            })
-                        }
-                        _ => Ok(()),
-                    }
+                        LogOutput::StdErr { message } => (message, true),
+                    };
+
+                    // TODO: Stop crashing
+                    let message_with_timestamp =
+                        String::from_utf8_lossy(message.as_ref()).to_string();
+                    let split_index = message_with_timestamp.find(' ').expect("No timestamp");
+                    let (timestamp, message) = message_with_timestamp.split_at(split_index);
+                    let timestamp = chrono::DateTime::parse_from_rfc3339(timestamp)
+                        .expect("Invalid timestamp")
+                        .with_timezone(&Local);
+                    let message = &message[1..];
+
+                    tx.send(ScenarioPlayingEvent::LogReceived {
+                        log_message: LogMessage {
+                            simulator_name: simulator_name.clone(),
+                            timestamp,
+                            message: message.to_owned(),
+                            is_error,
+                        },
+                    })
                     .ok();
                 })
                 .await;

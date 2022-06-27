@@ -58,7 +58,7 @@ impl DockerScenarioExecutor {
             .cloned()
             .collect::<Vec<_>>();
 
-        wait_for_simulators_to_be_ready(running_simulators.clone()).await?;
+        wait_for_simulators_to_be_ready(running_simulators.clone(), tx.clone()).await?;
 
         tokio::spawn(async move {
             while let Some(log) = rx.recv().await {
@@ -152,6 +152,7 @@ async fn instantiate_simulators(
 
 async fn wait_for_simulators_to_be_ready(
     running_docker_simulators: Vec<RunningDockerSimulator>,
+    tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
 ) -> Result<(), Error> {
     let ready_futures = running_docker_simulators
         .into_iter()
@@ -179,6 +180,8 @@ async fn wait_for_simulators_to_be_ready(
             error
         ))
     })?;
+
+    tx.send(ScenarioPlayingEvent::ScenarioStarting).ok();
 
     result.into_iter().collect()
 }

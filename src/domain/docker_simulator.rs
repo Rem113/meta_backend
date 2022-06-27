@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use bollard::container::{LogOutput, LogsOptions, RemoveContainerOptions};
+use bollard::models::PortBinding;
 use bollard::{
     container::{Config, CreateContainerOptions, StartContainerOptions},
     models::HostConfig,
@@ -39,7 +41,13 @@ impl DockerSimulator {
                     attach_stderr: Some(true),
                     image: Some(image.tag().as_meta()),
                     host_config: Some(HostConfig {
-                        publish_all_ports: Some(true),
+                        port_bindings: Some(HashMap::from([(
+                            String::from("3000/tcp"),
+                            Some(vec![PortBinding {
+                                host_ip: Some(String::from("localhost")),
+                                host_port: Some(format!("{}", simulator.port())),
+                            }]),
+                        )])),
                         ..Default::default()
                     }),
                     env: Some(

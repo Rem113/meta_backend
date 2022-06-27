@@ -12,6 +12,7 @@ pub struct SimulatorDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<String>,
     name: String,
+    port: u16,
     #[serde(rename = "environmentId")]
     environment_id: String,
     #[serde(rename = "imageId")]
@@ -24,6 +25,7 @@ impl From<Simulator> for SimulatorDTO {
         Self {
             id: simulator.id.as_ref().map(ToString::to_string),
             name: simulator.name,
+            port: simulator.port,
             environment_id: simulator.environment_id.to_string(),
             image_id: simulator.image_id.to_string(),
             configuration: simulator.configuration,
@@ -38,6 +40,7 @@ pub struct Simulator {
     #[serde(serialize_with = "serialize_option_object_id")]
     id: Option<ObjectId>,
     name: String,
+    port: u16,
     #[serde(serialize_with = "serialize_object_id")]
     #[serde(rename = "environmentId")]
     environment_id: ObjectId,
@@ -50,6 +53,7 @@ pub struct Simulator {
 impl Simulator {
     pub fn new(
         name: String,
+        port: u16,
         environment_id: ObjectId,
         image_id: ObjectId,
         configuration: HashMap<String, String>,
@@ -57,6 +61,7 @@ impl Simulator {
         Self {
             id: None,
             name,
+            port,
             environment_id,
             image_id,
             configuration,
@@ -67,8 +72,8 @@ impl Simulator {
         &self.name
     }
 
-    pub fn environment_id(&self) -> &ObjectId {
-        &self.environment_id
+    pub fn port(&self) -> u16 {
+        self.port
     }
 
     pub fn image_id(&self) -> &ObjectId {

@@ -101,6 +101,7 @@ async fn initialize_greeting_simulator(
 
     let simulator = Simulator::new(
         String::from("greeting-sim"),
+        30000,
         environment_id,
         image_id,
         HashMap::from([(String::from("GREETING"), String::from("Hey"))]),
@@ -120,6 +121,7 @@ async fn initialize_manager(
 
     let simulator = Simulator::new(
         String::from("manager"),
+        30001,
         environment_id,
         image_id,
         HashMap::new(),

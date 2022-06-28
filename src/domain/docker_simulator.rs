@@ -13,8 +13,7 @@ use futures::stream::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::data::{Environment, Image, Simulator};
-use crate::domain::log_message::LogMessage;
-use crate::domain::scenario_playing_event::ScenarioPlayingEvent;
+use crate::data::{LogMessage, ScenarioPlayingEvent};
 
 use super::{running_docker_simulator::RunningDockerSimulator, Error};
 
@@ -145,13 +144,17 @@ impl DockerSimulator {
                     let timestamp = chrono::DateTime::parse_from_rfc3339(timestamp)
                         .expect("Invalid timestamp")
                         .with_timezone(&Local);
-                    let message = &message[1..];
+                    let mut message = message[1..].to_owned();
+
+                    if message.ends_with('\n') {
+                        message.pop();
+                    }
 
                     tx.send(ScenarioPlayingEvent::LogReceived {
                         log_message: LogMessage {
                             simulator_name: simulator_name.clone(),
                             timestamp,
-                            message: message.to_owned(),
+                            message,
                             is_error,
                         },
                     })

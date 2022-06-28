@@ -1,6 +1,8 @@
+use std::time::SystemTime;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bollard::Docker;
+use chrono::DateTime;
 use futures::{future::try_join_all, SinkExt};
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
@@ -8,7 +10,7 @@ use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
 use warp::ws::Message;
 
-use crate::domain::scenario_playing_event::ScenarioPlayingEvent;
+use crate::data::{Execution, ScenarioPlayingEvent};
 use crate::{
     data::{Environment, Repository, Scenario, Simulator, Step},
     domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
@@ -46,7 +48,7 @@ impl DockerScenarioExecutor {
 
         let image_id_to_running_simulator = instantiate_simulators(
             unique_images,
-            repository,
+            repository.clone(),
             docker.clone(),
             environment,
             tx.clone(),
@@ -60,17 +62,35 @@ impl DockerScenarioExecutor {
 
         wait_for_simulators_to_be_ready(running_simulators.clone(), tx.clone()).await?;
 
+        let scenario_id = scenario.id().unwrap().to_owned();
+        let environment_id = environment.id().unwrap().to_owned();
+
         tokio::spawn(async move {
-            while let Some(log) = rx.recv().await {
+            let mut events = Vec::new();
+
+            while let Some(event) = rx.recv().await {
+                events.push(event.clone());
+
                 if let Err(err) = web_socket
                     .send(Message::text(
-                        serde_json::to_string(&log).unwrap_or_default(),
+                        serde_json::to_string(&event).unwrap_or_default(),
                     ))
                     .await
                 {
                     warn!("{:?}", err);
                 }
             }
+
+            repository
+                .clone()
+                .create::<Execution>(Execution::new(
+                    scenario_id,
+                    environment_id,
+                    DateTime::from(SystemTime::now()),
+                    events,
+                ))
+                .await
+                .ok();
         });
 
         let step_data = steps

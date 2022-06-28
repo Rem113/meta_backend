@@ -16,6 +16,14 @@ pub struct Repository {
     database: Arc<Database>,
 }
 
+impl Clone for Repository {
+    fn clone(&self) -> Self {
+        Self {
+            database: Arc::clone(&self.database),
+        }
+    }
+}
+
 impl Repository {
     pub fn new(database: Arc<Database>) -> Self {
         Self { database }

@@ -1,7 +1,7 @@
-use crate::domain::log_message::LogMessage;
+use crate::data::models::LogMessage;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum ScenarioPlayingEvent {
     ScenarioStarting,

@@ -7,6 +7,8 @@ mod serializers;
 mod simulator;
 mod step;
 mod tag;
+mod scenario_playing_event;
+mod log_message;
 
 pub use command::Command;
 pub use environment::{Environment, EnvironmentDTO};
@@ -16,3 +18,5 @@ pub use scenario::{Scenario, ScenarioDTO};
 pub use simulator::{Simulator, SimulatorDTO};
 pub use step::{Step, StepDTO};
 pub use tag::Tag;
+pub use scenario_playing_event::ScenarioPlayingEvent;
+pub use log_message::LogMessage;

@@ -46,6 +46,10 @@ impl Scenario {
         }
     }
 
+    pub fn id(&self) -> Option<&ObjectId> {
+        self.id.as_ref()
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

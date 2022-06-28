@@ -7,7 +7,7 @@ use warp::Filter;
 use crate::api::handlers::simulators_handlers;
 use crate::data::Repository;
 
-pub fn simulators_routes(
+pub fn simulator_routes(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (impl warp::reply::Reply,), Error = warp::Rejection> + Clone {
     let common = warp::path("simulators").and(with_repository(database));

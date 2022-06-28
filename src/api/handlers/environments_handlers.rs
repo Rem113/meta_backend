@@ -1,10 +1,11 @@
+use std::sync::Arc;
+
 use bollard::Docker;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use std::sync::Arc;
 use warp::hyper;
 
-use crate::data::{EnvironmentDTO, Scenario, Simulator, SimulatorDTO};
+use crate::data::{EnvironmentDTO, Execution, ExecutionDTO, Scenario, Simulator, SimulatorDTO};
 use crate::domain::DockerScenarioExecutor;
 use crate::{
     api::error_rejection::ErrorRejection,
@@ -105,4 +106,21 @@ pub async fn run_scenario_in_environment(
         .await
         .ok();
     }))
+}
+
+pub async fn executions_for_scenario_in_environment(
+    repository: Repository,
+    environment_id: ObjectId,
+    scenario_id: ObjectId,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    let executions = repository
+        .find::<Execution>(doc! { "scenarioId": scenario_id, "environmentId": environment_id })
+        .await?;
+
+    Ok(warp::reply::json(
+        &executions
+            .into_iter()
+            .map(ExecutionDTO::from)
+            .collect::<Vec<_>>(),
+    ))
 }

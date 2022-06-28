@@ -17,6 +17,7 @@ pub struct ExecutionDTO {
     environment_id: String,
     timestamp: DateTime<Local>,
     events: Vec<ScenarioPlayingEvent>,
+    successful: bool,
 }
 
 impl From<Execution> for ExecutionDTO {
@@ -27,6 +28,7 @@ impl From<Execution> for ExecutionDTO {
             environment_id: execution.environment_id.to_string(),
             timestamp: execution.timestamp,
             events: execution.events,
+            successful: execution.successful,
         }
     }
 }
@@ -43,6 +45,7 @@ pub struct Execution {
     environment_id: ObjectId,
     timestamp: DateTime<Local>,
     events: Vec<ScenarioPlayingEvent>,
+    successful: bool,
 }
 
 impl Execution {
@@ -52,12 +55,17 @@ impl Execution {
         timestamp: DateTime<Local>,
         events: Vec<ScenarioPlayingEvent>,
     ) -> Execution {
+        let successful = events
+            .iter()
+            .all(|event| !matches!(event, ScenarioPlayingEvent::StepFailed { .. }));
+
         Self {
             id: None,
             scenario_id,
             environment_id,
             timestamp,
             events,
+            successful,
         }
     }
 }

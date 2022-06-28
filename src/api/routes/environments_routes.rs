@@ -43,17 +43,27 @@ pub fn environment_routes(
         .and_then(environments_handlers::simulators_for_environment);
 
     let run_scenario_in_environment = common
+        .clone()
         .and(warp::path::param())
         .and(warp::path("scenarios"))
         .and(warp::path::param())
         .and(with_docker(docker))
         .and(warp::ws())
         .and_then(environments_handlers::run_scenario_in_environment);
+    
+    let executions_for_scenario_in_environment = common
+        .and(warp::get())
+        .and(warp::path::param())
+        .and(warp::path("scenarios"))
+        .and(warp::path::param())
+        .and(warp::path("executions"))
+        .and_then(environments_handlers::executions_for_scenario_in_environment);
 
     list.or(create)
         .or(find_by_id)
         .or(simulators_for_environment)
         .or(run_scenario_in_environment)
+        .or(executions_for_scenario_in_environment)
 }
 
 fn with_repository(

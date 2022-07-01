@@ -1,15 +1,8 @@
-use std::collections::HashMap;
-
-use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use serde::Deserialize;
 use warp::hyper;
 
-use crate::data::{Execution, ExecutionDTO, SimulatorDTO};
-use crate::{
-    api::error_rejection::ErrorRejection,
-    data::{Environment, Image, Repository, Simulator},
-};
+use crate::data::{Execution, ExecutionDTO};
+use crate::{api::error_rejection::ErrorRejection, data::Repository};
 
 pub async fn find_by_id(
     repository: Repository,

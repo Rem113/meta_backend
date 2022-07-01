@@ -8,7 +8,7 @@ use warp::Filter;
 use crate::api::handlers::images_handlers;
 use crate::data::Repository;
 
-pub fn image_routes(
+pub fn images_routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {

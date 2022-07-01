@@ -6,7 +6,7 @@ use warp::Filter;
 use crate::api::handlers::scenarios_handlers;
 use crate::data::Repository;
 
-pub fn scenario_routes(
+pub fn scenarios_routes(
     database: Arc<Database>,
 ) -> impl Filter<Extract = (impl warp::reply::Reply,), Error = warp::Rejection> + Clone {
     let common = warp::path("scenarios").and(with_repository(database));

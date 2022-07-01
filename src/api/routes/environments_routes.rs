@@ -8,7 +8,7 @@ use warp::Filter;
 use crate::api::handlers::environments_handlers;
 use crate::data::Repository;
 
-pub fn environment_routes(
+pub fn environments_routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -50,7 +50,7 @@ pub fn environment_routes(
         .and(with_docker(docker))
         .and(warp::ws())
         .and_then(environments_handlers::run_scenario_in_environment);
-    
+
     let executions_for_scenario_in_environment = common
         .and(warp::get())
         .and(warp::path::param())

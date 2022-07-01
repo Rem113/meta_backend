@@ -4,7 +4,9 @@ use bollard::Docker;
 use mongodb::Database;
 use warp::Filter;
 
-use crate::api::routes::{environment_routes, image_routes, scenario_routes, simulator_routes};
+use crate::api::routes::{
+    environments_routes, executions_routes, images_routes, scenarios_routes, simulators_routes,
+};
 
 use self::error_rejection::ErrorRejection;
 
@@ -17,10 +19,11 @@ pub fn routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    image_routes(database.clone(), docker.clone())
-        .or(environment_routes(database.clone(), docker))
-        .or(scenario_routes(database.clone()))
-        .or(simulator_routes(database))
+    images_routes(Arc::clone(&database), Arc::clone(&docker))
+        .or(environments_routes(Arc::clone(&database), docker))
+        .or(scenarios_routes(Arc::clone(&database)))
+        .or(simulators_routes(Arc::clone(&database)))
+        .or(executions_routes(database))
 }
 
 pub async fn rejection_handler(

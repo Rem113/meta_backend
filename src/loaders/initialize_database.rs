@@ -54,6 +54,7 @@ async fn initialize_images(database: &Database) -> Result<(ObjectId, ObjectId), 
     let images = database.collection("Images");
 
     let greeting_sim_image = Image::new(
+        String::from("Returns greetings base on name"),
         Tag {
             name: String::from("greeting-sim"),
             version: String::from("1.0.0"),
@@ -66,6 +67,7 @@ async fn initialize_images(database: &Database) -> Result<(ObjectId, ObjectId), 
     );
 
     let manager_image = Image::new(
+        String::from("Used to wait in scenarios"),
         Tag {
             name: String::from("manager"),
             version: String::from("1.0.0"),

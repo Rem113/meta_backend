@@ -56,6 +56,7 @@ pub fn environments_routes(
         .and_then(environments_handlers::run_scenario_in_environment);
 
     let executions_for_scenario_in_environment = common
+        .clone()
         .and(warp::get())
         .and(warp::path::param())
         .and(warp::path("scenarios"))
@@ -63,11 +64,21 @@ pub fn environments_routes(
         .and(warp::path("executions"))
         .and_then(environments_handlers::executions_for_scenario_in_environment);
 
+    let add_simulator_for_environment = common
+        .clone()
+        .and(warp::post())
+        .and(warp::path::param())
+        .and(warp::path("simulators"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(environments_handlers::add_simulator_for_environment);
+
     list.or(create)
         .or(find_by_id)
         .or(simulators_for_environment)
         .or(run_scenario_in_environment)
         .or(executions_for_scenario_in_environment)
+        .or(add_simulator_for_environment)
 }
 
 fn with_mutex(

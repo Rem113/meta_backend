@@ -3,6 +3,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 
 use mongodb::Database;
+use tokio::sync::Mutex;
 use warp::Filter;
 
 use crate::api::handlers::environments_handlers;
@@ -11,7 +12,7 @@ use crate::data::Repository;
 pub fn environments_routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
-) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract=(impl warp::Reply, ), Error=warp::Rejection> + Clone {
     let common = warp::path("environments").and(with_repository(database));
 
     let list = common
@@ -42,6 +43,8 @@ pub fn environments_routes(
         .and(warp::path::end())
         .and_then(environments_handlers::simulators_for_environment);
 
+    let execution_mutex = Arc::new(Mutex::new(()));
+
     let run_scenario_in_environment = common
         .clone()
         .and(warp::path::param())
@@ -49,6 +52,7 @@ pub fn environments_routes(
         .and(warp::path::param())
         .and(with_docker(docker))
         .and(warp::ws())
+        .and(with_mutex(execution_mutex))
         .and_then(environments_handlers::run_scenario_in_environment);
 
     let executions_for_scenario_in_environment = common
@@ -66,14 +70,20 @@ pub fn environments_routes(
         .or(executions_for_scenario_in_environment)
 }
 
+fn with_mutex(
+    mutex: Arc<Mutex<()>>
+) -> impl Filter<Extract=(Arc<Mutex<()>>, ), Error=Infallible> + Clone {
+    warp::any().map(move || Arc::clone(&mutex))
+}
+
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (Repository,), Error = Infallible> + Clone {
+) -> impl Filter<Extract=(Repository, ), Error=Infallible> + Clone {
     warp::any().map(move || Repository::new(database.clone()))
 }
 
 fn with_docker(
     docker: Arc<Docker>,
-) -> impl Filter<Extract = (Arc<Docker>,), Error = Infallible> + Clone {
+) -> impl Filter<Extract=(Arc<Docker>, ), Error=Infallible> + Clone {
     warp::any().map(move || docker.clone())
 }

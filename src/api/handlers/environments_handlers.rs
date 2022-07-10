@@ -3,6 +3,7 @@ use std::sync::Arc;
 use bollard::Docker;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use tokio::sync::Mutex;
 use warp::hyper;
 
 use crate::data::{EnvironmentDTO, Execution, ExecutionDTO, Scenario, Simulator, SimulatorDTO};
@@ -81,6 +82,7 @@ pub async fn run_scenario_in_environment(
     scenario_id: String,
     docker: Arc<Docker>,
     web_socket: warp::ws::Ws,
+    mutex: Arc<Mutex<()>>
 ) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let scenario_id = ObjectId::parse_str(&scenario_id).expect("Invalid scenario id");
     let environment_id = ObjectId::parse_str(&environment_id).expect("Invalid environment id");
@@ -96,6 +98,9 @@ pub async fn run_scenario_in_environment(
         .expect("Scenario not found");
 
     Ok(web_socket.on_upgrade(|web_socket| async move {
+        // Prevents concurrent executions
+        let _guard = mutex.lock().await;
+
         DockerScenarioExecutor::run_scenario_in_environment(
             docker,
             &environment,

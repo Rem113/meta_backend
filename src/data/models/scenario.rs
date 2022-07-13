@@ -1,3 +1,4 @@
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
@@ -68,6 +69,16 @@ impl Document for Scenario {
         Self {
             id: Some(id),
             ..self
+        }
+    }
+}
+
+impl From<Scenario> for mongodb::bson::Document {
+    fn from(scenario: Scenario) -> Self {
+        doc! {
+            "name": scenario.name,
+            "description": scenario.description,
+            "steps": scenario.steps.into_iter().map(mongodb::bson::Document::from).collect::<Vec<_>>(),
         }
     }
 }

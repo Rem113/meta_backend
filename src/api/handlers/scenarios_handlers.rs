@@ -50,3 +50,17 @@ pub async fn find_by_id(
         )),
     }
 }
+
+pub async fn update(
+    repository: Repository,
+    scenario_id: ObjectId,
+    scenario: Scenario,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    match repository.update::<Scenario>(&scenario_id, scenario.into()).await {
+        Ok(scenario) => Ok(warp::reply::json(&ScenarioDTO::from(scenario))),
+        Err(_) => Err(ErrorRejection::reject(
+            "Could not find scenario",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+    }
+}

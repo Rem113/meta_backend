@@ -8,8 +8,8 @@ use futures::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use tracing::warn;
+use warp::{Buf, hyper};
 use warp::multipart::{FormData, Part};
-use warp::{hyper, Buf};
 
 use crate::api::error_rejection::ErrorRejection;
 use crate::data::{Image, ImageDTO, Repository};
@@ -135,5 +135,29 @@ pub async fn find_by_id(
             "Image not found",
             hyper::StatusCode::NOT_FOUND,
         )),
+    }
+}
+
+pub async fn find_by_name(repository: Repository, image_name: String) -> Result<warp::reply::Json, warp::Rejection> {
+    match repository.find(doc! {"tag": {"name": &image_name } }).await {
+        Ok(images) => {
+            if images.is_empty() {
+                Err(ErrorRejection::reject(
+                    "Image not found",
+                    hyper::StatusCode::NOT_FOUND,
+                ))
+            } else {
+                Ok(warp::reply::json(&images.into_iter()
+                    .map(|image: Image| ImageDTO::from(image))
+                    .collect::<Vec<_>>()))
+            }
+        }
+        Err(error) => {
+            warn!("{:?}", error);
+            Err(ErrorRejection::reject(
+                &format!("Couldn't find image: {:?}", error),
+                hyper::StatusCode::INTERNAL_SERVER_ERROR,
+            ))
+        }
     }
 }

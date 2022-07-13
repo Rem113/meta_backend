@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use mongodb::bson::{doc, to_bson};
 
 use crate::data::repository::Document;
 
@@ -94,6 +95,18 @@ impl Document for Simulator {
         Self {
             id: Some(id),
             ..self
+        }
+    }
+}
+
+impl From<Simulator> for mongodb::bson::Document {
+    fn from(simulator: Simulator) -> Self {
+        doc! {
+            "name": simulator.name,
+            "port": simulator.port as u32,
+            "environmentId": simulator.environment_id,
+            "imageId": simulator.image_id,
+            "configuration": to_bson(&simulator.configuration).unwrap(),
         }
     }
 }

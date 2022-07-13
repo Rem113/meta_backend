@@ -29,11 +29,18 @@ pub fn images_routes(
         .and_then(images_handlers::create);
 
     let find_by_id = common
+        .clone()
         .and(warp::get())
         .and(warp::path::param())
         .and_then(images_handlers::find_by_id);
 
-    list.or(create).or(find_by_id)
+    let find_by_name = common
+        .and(warp::get())
+        .and(warp::path("name"))
+        .and(warp::path::param())
+        .and_then(images_handlers::find_by_name);
+
+    list.or(create).or(find_by_id).or(find_by_name)
 }
 
 fn with_repository(

@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cors = warp::cors()
         .allow_any_origin()
-        .allow_methods(["GET", "POST"])
+        .allow_methods(["GET", "POST", "PUT"])
         .allow_headers(["Content-Type"]);
     let api = warp::path("api")
         .and(api::routes(database, docker))

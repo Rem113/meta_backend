@@ -43,6 +43,15 @@ pub fn environments_routes(
         .and(warp::path::end())
         .and_then(environments_handlers::simulators_for_environment);
 
+    let find_simulator_by_id = common
+        .clone()
+        .and(warp::get())
+        .and(warp::path::param())
+        .and(warp::path("simulators"))
+        .and(warp::path::param())
+        .and(warp::path::end())
+        .and_then(environments_handlers::find_simulator_by_id);
+
     let execution_mutex = Arc::new(Mutex::new(()));
 
     let run_scenario_in_environment = common
@@ -65,7 +74,6 @@ pub fn environments_routes(
         .and_then(environments_handlers::executions_for_scenario_in_environment);
 
     let add_simulator_for_environment = common
-        .clone()
         .and(warp::post())
         .and(warp::path::param())
         .and(warp::path("simulators"))
@@ -76,6 +84,7 @@ pub fn environments_routes(
     list.or(create)
         .or(find_by_id)
         .or(simulators_for_environment)
+        .or(find_simulator_by_id)
         .or(run_scenario_in_environment)
         .or(executions_for_scenario_in_environment)
         .or(add_simulator_for_environment)

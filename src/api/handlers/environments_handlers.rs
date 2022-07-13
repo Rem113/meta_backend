@@ -1,20 +1,19 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use serde::Deserialize;
-
 use bollard::Docker;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use serde::Deserialize;
 use tokio::sync::Mutex;
 use warp::hyper;
 
-use crate::data::{EnvironmentDTO, Execution, ExecutionDTO, Image, Scenario, Simulator, SimulatorDTO};
-use crate::domain::DockerScenarioExecutor;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Repository},
 };
+use crate::data::{EnvironmentDTO, Execution, ExecutionDTO, Image, Scenario, Simulator, SimulatorDTO};
+use crate::domain::DockerScenarioExecutor;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let environments = repository.list::<Environment>().await?;
@@ -79,13 +78,31 @@ pub async fn simulators_for_environment(
     ))
 }
 
+pub async fn find_simulator_by_id(
+    repository: Repository,
+    environment_id: ObjectId,
+    simulator_id: ObjectId,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    let simulator = repository
+        .find_one::<Simulator>(doc! { "_id": simulator_id, "environmentId": environment_id })
+        .await?;
+
+    match simulator {
+        Some(simulator) => Ok(warp::reply::json(&SimulatorDTO::from(simulator))),
+        None => Err(ErrorRejection::reject(
+            "Could not find simulator",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+    }
+}
+
 pub async fn run_scenario_in_environment(
     repository: Repository,
     environment_id: String,
     scenario_id: String,
     docker: Arc<Docker>,
     web_socket: warp::ws::Ws,
-    mutex: Arc<Mutex<()>>
+    mutex: Arc<Mutex<()>>,
 ) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let scenario_id = ObjectId::parse_str(&scenario_id).expect("Invalid scenario id");
     let environment_id = ObjectId::parse_str(&environment_id).expect("Invalid environment id");
@@ -111,8 +128,8 @@ pub async fn run_scenario_in_environment(
             repository,
             web_socket,
         )
-        .await
-        .ok();
+            .await
+            .ok();
     }))
 }
 

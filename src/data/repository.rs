@@ -7,7 +7,7 @@ use mongodb::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::data::Error;
+use crate::data::DataError;
 
 pub trait Document {
     fn collection_name() -> &'static str;
@@ -31,7 +31,7 @@ impl Repository {
         Self { database }
     }
 
-    pub async fn list<T>(&self) -> Result<Vec<T>, Error>
+    pub async fn list<T>(&self) -> Result<Vec<T>, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -42,7 +42,7 @@ impl Repository {
         cursor.try_collect().await.map_err(Into::into)
     }
 
-    pub async fn create<T>(&self, document: T) -> Result<T, Error>
+    pub async fn create<T>(&self, document: T) -> Result<T, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -55,7 +55,7 @@ impl Repository {
         Ok(document.with_id(inserted_id))
     }
 
-    pub async fn find_by_id<T>(&self, id: &ObjectId) -> Result<Option<T>, Error>
+    pub async fn find_by_id<T>(&self, id: &ObjectId) -> Result<Option<T>, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -67,7 +67,10 @@ impl Repository {
             .map_err(Into::into)
     }
 
-    pub async fn find_one<T>(&self, document: mongodb::bson::Document) -> Result<Option<T>, Error>
+    pub async fn find_one<T>(
+        &self,
+        document: mongodb::bson::Document,
+    ) -> Result<Option<T>, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -79,7 +82,7 @@ impl Repository {
             .map_err(Into::into)
     }
 
-    pub async fn find<T>(&self, document: mongodb::bson::Document) -> Result<Vec<T>, Error>
+    pub async fn find<T>(&self, document: mongodb::bson::Document) -> Result<Vec<T>, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -94,7 +97,7 @@ impl Repository {
         &self,
         id: &ObjectId,
         document: mongodb::bson::Document,
-    ) -> Result<T, Error>
+    ) -> Result<T, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -104,10 +107,10 @@ impl Repository {
             .find_one_and_update(doc! { "_id" : id }, doc! { "$set" : document }, None)
             .await?;
 
-        result.ok_or(Error::NotFound)
+        result.ok_or(DataError::NotFound)
     }
 
-    pub async fn remove<T>(&self, id: &ObjectId) -> Result<T, Error>
+    pub async fn remove<T>(&self, id: &ObjectId) -> Result<T, DataError>
     where
         T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
@@ -117,6 +120,6 @@ impl Repository {
             .find_one_and_delete(doc! { "_id" : id }, None)
             .await?;
 
-        result.ok_or(Error::NotFound)
+        result.ok_or(DataError::NotFound)
     }
 }

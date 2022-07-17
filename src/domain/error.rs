@@ -1,11 +1,11 @@
 use warp::hyper;
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum DomainError {
     #[error("{0}")]
     Docker(#[from] bollard::errors::Error),
     #[error("{0}")]
-    Data(#[from] crate::data::Error),
+    Data(#[from] crate::data::DataError),
     #[error("{0}")]
     SimulatorNotReady(String),
     #[error("Error {status}: {message}")]

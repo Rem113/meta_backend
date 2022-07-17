@@ -15,7 +15,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::data::{Environment, Image, Simulator};
 use crate::data::{LogMessage, ScenarioPlayingEvent};
 
-use super::{running_docker_simulator::RunningDockerSimulator, Error};
+use super::{running_docker_simulator::RunningDockerSimulator, DomainError};
 
 pub struct DockerSimulator {
     container_name: String,
@@ -29,7 +29,7 @@ impl DockerSimulator {
         environment: &Environment,
         simulator: &Simulator,
         image: &Image,
-    ) -> Result<DockerSimulator, Error> {
+    ) -> Result<DockerSimulator, DomainError> {
         let container_name = format!("{}-{}", environment.name(), simulator.name());
 
         docker
@@ -73,7 +73,7 @@ impl DockerSimulator {
     pub async fn start(
         self,
         tx: Option<Arc<UnboundedSender<ScenarioPlayingEvent>>>,
-    ) -> Result<RunningDockerSimulator, Error> {
+    ) -> Result<RunningDockerSimulator, DomainError> {
         self.docker
             .start_container(self.container_name(), None::<StartContainerOptions<String>>)
             .await?;
@@ -102,7 +102,7 @@ impl DockerSimulator {
                     .await
                     .ok();
 
-                Err(Error::SimulatorNotReady(String::from(
+                Err(DomainError::SimulatorNotReady(String::from(
                     "No port exposed by simulator",
                 )))
             }
@@ -176,7 +176,7 @@ impl DockerSimulator {
 async fn get_exposed_port_for_container(
     docker: Arc<Docker>,
     container_name: &str,
-) -> Result<u16, Error> {
+) -> Result<u16, DomainError> {
     let container_inspect_response = docker.inspect_container(container_name, None).await?;
 
     let option_port = container_inspect_response
@@ -196,7 +196,7 @@ async fn get_exposed_port_for_container(
 
     match option_port {
         Some(port) => Ok(port),
-        None => Err(Error::SimulatorNotFound(format!(
+        None => Err(DomainError::SimulatorNotFound(format!(
             "Could not find exposed port for simulator {}",
             container_name
         ))),

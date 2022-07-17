@@ -6,4 +6,4 @@ mod running_docker_simulator;
 
 pub use docker_image::DockerImage;
 pub use docker_scenario_executor::DockerScenarioExecutor;
-pub use error::Error;
+pub use error::DomainError;

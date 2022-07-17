@@ -16,7 +16,7 @@ use crate::{
     domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
 };
 
-use super::error::Error;
+use super::error::DomainError;
 
 pub struct DockerScenarioExecutor {}
 
@@ -27,7 +27,7 @@ impl DockerScenarioExecutor {
         scenario: &Scenario,
         repository: Repository,
         mut web_socket: warp::ws::WebSocket,
-    ) -> Result<(), Error> {
+    ) -> Result<(), DomainError> {
         let steps = scenario.steps();
 
         let unique_images =
@@ -105,7 +105,7 @@ impl DockerScenarioExecutor {
 
         if let Err(error) = run_scenario(&step_data, tx.clone()).await {
             match error {
-                Error::SimulatorCommandFailed {
+                DomainError::SimulatorCommandFailed {
                     step,
                     message,
                     status,
@@ -136,7 +136,7 @@ async fn instantiate_simulators(
     docker: Arc<Docker>,
     environment: &Environment,
     tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
-) -> Result<HashMap<ObjectId, RunningDockerSimulator>, Error> {
+) -> Result<HashMap<ObjectId, RunningDockerSimulator>, DomainError> {
     let mut image_id_to_running_docker_simulator = HashMap::new();
 
     for image_id in images {
@@ -149,14 +149,14 @@ async fn instantiate_simulators(
 
         let simulator = match simulator.first() {
             Some(simulator) => simulator,
-            None => return Err(Error::SimulatorNotFound(image_id.to_string())),
+            None => return Err(DomainError::SimulatorNotFound(image_id.to_string())),
         };
 
         let image = repository.find_by_id(simulator.image_id()).await?;
 
         let image = match image {
             Some(image) => image,
-            None => return Err(Error::ImageNotFound(simulator.image_id().to_string())),
+            None => return Err(DomainError::ImageNotFound(simulator.image_id().to_string())),
         };
 
         let docker_container =
@@ -173,7 +173,7 @@ async fn instantiate_simulators(
 async fn wait_for_simulators_to_be_ready(
     running_docker_simulators: Vec<RunningDockerSimulator>,
     tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
-) -> Result<(), Error> {
+) -> Result<(), DomainError> {
     let ready_futures = running_docker_simulators
         .into_iter()
         .map(|running_simulator| {
@@ -186,7 +186,7 @@ async fn wait_for_simulators_to_be_ready(
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
 
-                Err(Error::SimulatorNotReady(format!(
+                Err(DomainError::SimulatorNotReady(format!(
                     "Simulator {} was not ready within 30 seconds",
                     running_simulator.name()
                 )))
@@ -195,7 +195,7 @@ async fn wait_for_simulators_to_be_ready(
         .collect::<Vec<_>>();
 
     let result = try_join_all(ready_futures).await.map_err(|error| {
-        Error::SimulatorNotReady(format!(
+        DomainError::SimulatorNotReady(format!(
             "Error while waiting for simulators to be ready: {}",
             error
         ))
@@ -209,7 +209,7 @@ async fn wait_for_simulators_to_be_ready(
 async fn run_scenario(
     step_data: &[(&Step, &RunningDockerSimulator)],
     tx: Arc<UnboundedSender<ScenarioPlayingEvent>>,
-) -> Result<(), Error> {
+) -> Result<(), DomainError> {
     for (i, (step, running_docker_simulator)) in step_data.iter().enumerate() {
         trace!(
             "Step #{}: Command: {:?}, Arguments: {:?}",
@@ -231,7 +231,7 @@ async fn run_scenario(
                 .ok();
             }
             Err(error) => {
-                if matches!(error, Error::SimulatorCommandFailed { .. }) {
+                if matches!(error, DomainError::SimulatorCommandFailed { .. }) {
                     return Err(error);
                 }
             }

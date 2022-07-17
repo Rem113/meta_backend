@@ -18,11 +18,11 @@ impl From<mongodb::error::Error> for Error {
     }
 }
 
-impl From<crate::domain::Error> for Error {
-    fn from(error: crate::domain::Error) -> Self {
+impl From<crate::domain::DomainError> for Error {
+    fn from(error: crate::domain::DomainError) -> Self {
         match error {
-            crate::domain::Error::Docker(error) => Error::Docker(error.to_string()),
-            crate::domain::Error::Data(error) => Error::Database(error.to_string()),
+            crate::domain::DomainError::Docker(error) => Error::Docker(error.to_string()),
+            crate::domain::DomainError::Data(error) => Error::Database(error.to_string()),
             other => panic!("Unexpected error while initializing the app: {:?}", other),
         }
     }

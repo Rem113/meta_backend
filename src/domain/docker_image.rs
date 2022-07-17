@@ -9,7 +9,7 @@ use futures::TryStreamExt;
 
 use crate::data::Tag;
 
-use super::error::Error;
+use super::error::DomainError;
 
 pub struct DockerImage {
     tag: Tag,
@@ -24,7 +24,7 @@ impl DockerImage {
         docker: Arc<Docker>,
         tag: Tag,
         image_bytes: Vec<u8>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, DomainError> {
         let mut docker_build_info = docker.build_image(
             BuildImageOptions {
                 t: tag.as_meta(),
@@ -38,14 +38,14 @@ impl DockerImage {
         while docker_build_info
             .try_next()
             .await
-            .map_err(Error::Docker)?
+            .map_err(DomainError::Docker)?
             .is_some()
         {}
 
         Ok(DockerImage { tag })
     }
 
-    pub async fn list(docker: Arc<Docker>) -> Result<Vec<ImageSummary>, Error> {
+    pub async fn list(docker: Arc<Docker>) -> Result<Vec<ImageSummary>, DomainError> {
         let filters = vec![("reference", vec!["meta/*"])].into_iter().collect();
 
         docker
@@ -54,10 +54,10 @@ impl DockerImage {
                 ..Default::default()
             }))
             .await
-            .map_err(Error::Docker)
+            .map_err(DomainError::Docker)
     }
 
-    pub async fn delete(self, docker: Arc<Docker>) -> Result<(), Error> {
+    pub async fn delete(self, docker: Arc<Docker>) -> Result<(), DomainError> {
         docker
             .remove_image(
                 &self.tag.as_meta(),
@@ -68,7 +68,7 @@ impl DockerImage {
                 None,
             )
             .await
-            .map_err(Error::Docker)?;
+            .map_err(DomainError::Docker)?;
 
         Ok(())
     }

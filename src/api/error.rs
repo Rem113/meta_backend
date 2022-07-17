@@ -1,7 +1,7 @@
 use crate::data;
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum ApiError {
     #[error("{0}")]
-    DatabaseError(#[from] data::Error),
+    DatabaseError(#[from] data::DataError),
 }

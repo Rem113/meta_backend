@@ -4,7 +4,7 @@ use bollard::container::RemoveContainerOptions;
 use bollard::Docker;
 use warp::hyper;
 
-use super::Error;
+use super::DomainError;
 
 #[derive(Clone)]
 pub struct RunningDockerSimulator {
@@ -41,7 +41,7 @@ impl RunningDockerSimulator {
         step: usize,
         command: &str,
         arguments: &serde_json::Value,
-    ) -> Result<String, Error> {
+    ) -> Result<String, DomainError> {
         let url = format!("http://localhost:{}/command/{}", self.port, command);
 
         let response = self.client.post(&url).json(&arguments).send().await;
@@ -55,12 +55,12 @@ impl RunningDockerSimulator {
                     let response_text = response.text().await;
 
                     match response_text {
-                        Ok(text) => Err(Error::SimulatorCommandFailed {
+                        Ok(text) => Err(DomainError::SimulatorCommandFailed {
                             step,
                             message: text,
                             status: response_status,
                         }),
-                        Err(_) => Err(Error::SimulatorCommandFailed {
+                        Err(_) => Err(DomainError::SimulatorCommandFailed {
                             step,
                             message: String::from("Could not get error message"),
                             status: response_status,
@@ -68,7 +68,7 @@ impl RunningDockerSimulator {
                     }
                 }
             }
-            Err(error) => Err(Error::SimulatorCommandFailed {
+            Err(error) => Err(DomainError::SimulatorCommandFailed {
                 step,
                 message: error.to_string(),
                 status: hyper::StatusCode::INTERNAL_SERVER_ERROR,
@@ -76,7 +76,7 @@ impl RunningDockerSimulator {
         }
     }
 
-    pub async fn remove(self) -> Result<(), Error> {
+    pub async fn remove(self) -> Result<(), DomainError> {
         self.docker
             .remove_container(
                 self.name(),

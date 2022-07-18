@@ -1,8 +1,6 @@
-use futures::TryFutureExt;
 use std::{convert::Infallible, sync::Arc};
 
 use mongodb::Database;
-use tracing_subscriber::filter::FilterExt;
 use warp::Filter;
 
 use crate::api::handlers::scenarios_handlers;

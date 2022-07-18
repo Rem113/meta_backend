@@ -1,4 +1,4 @@
-use mongodb::bson::doc;
+use mongodb::bson::{bson, doc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -8,12 +8,12 @@ pub struct Command {
     pub path: String,
 }
 
-impl From<Command> for mongodb::bson::Document {
+impl From<Command> for mongodb::bson::Bson {
     fn from(command: Command) -> Self {
-        doc! {
+        bson! ({
             "name": command.name,
             "description": command.description,
             "path": command.path,
-        }
+        })
     }
 }

@@ -79,7 +79,7 @@ impl From<Scenario> for mongodb::bson::Document {
         doc! {
             "name": scenario.name,
             "description": scenario.description,
-            "steps": scenario.steps.into_iter().map(mongodb::bson::Document::from).collect::<Vec<_>>(),
+            "steps": scenario.steps.into_iter().map(mongodb::bson::Bson::from).collect::<Vec<_>>(),
         }
     }
 }

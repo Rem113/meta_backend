@@ -1,10 +1,10 @@
-use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{bson, doc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::Command;
 use super::serializers::serialize_object_id;
+use super::Command;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct StepDTO {
@@ -33,12 +33,12 @@ pub struct Step {
     pub arguments: Value,
 }
 
-impl From<Step> for mongodb::bson::Document {
+impl From<Step> for mongodb::bson::Bson {
     fn from(step: Step) -> Self {
-        doc! {
+        bson! ({
             "imageId": step.image_id,
-            "command": mongodb::bson::Document::from(step.command),
-            "arguments": step.arguments.to_string(),
-        }
+            "command": step.command,
+            "arguments": mongodb::bson::to_bson(&step.arguments).expect("Failed to serialize arguments"),
+        })
     }
 }

@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bollard::container::{LogOutput, LogsOptions, RemoveContainerOptions};
-use bollard::models::PortBinding;
 use bollard::{
     container::{Config, CreateContainerOptions, StartContainerOptions},
-    models::HostConfig,
     Docker,
+    models::HostConfig,
 };
+use bollard::container::{LogOutput, LogsOptions, RemoveContainerOptions};
+use bollard::models::PortBinding;
 use chrono::Local;
 use futures::stream::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
@@ -15,7 +15,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::data::{Environment, Image, Simulator};
 use crate::data::{LogMessage, ScenarioPlayingEvent};
 
-use super::{running_docker_simulator::RunningDockerSimulator, DomainError};
+use super::{DomainError, running_docker_simulator::RunningDockerSimulator};
 
 pub struct DockerSimulator {
     container_name: String,
@@ -158,7 +158,7 @@ impl DockerSimulator {
                             is_error,
                         },
                     })
-                    .ok();
+                        .ok();
                 })
                 .await;
         });

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use mongodb::bson::oid::ObjectId;
 use mongodb::{Client, Database};
+use mongodb::bson::oid::ObjectId;
 use serde_json::json;
 
 use crate::data::{Command, Environment, Image, Scenario, Simulator, Step, Tag};
@@ -76,7 +76,7 @@ async fn initialize_images(database: &Database) -> Result<(ObjectId, ObjectId), 
             name: String::from("Sleep"),
             description: String::from("This command takes a duration as a parameter, and sleeps for the specified duration"),
             path: String::from("sleep"),
-        }]
+        }],
     );
 
     let greeting_sim_insert_result = images.insert_one(greeting_sim_image, None).await?;

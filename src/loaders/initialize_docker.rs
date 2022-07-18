@@ -20,7 +20,7 @@ pub async fn initialize_docker() -> Result<Docker, Error> {
             version: String::from("1.0.0"),
         },
     )
-    .await?;
+        .await?;
 
     add_simulator(
         docker.clone(),
@@ -30,7 +30,7 @@ pub async fn initialize_docker() -> Result<Docker, Error> {
             version: String::from("1.0.0"),
         },
     )
-    .await?;
+        .await?;
 
     Ok(docker)
 }
@@ -52,8 +52,8 @@ async fn format_image_repository(docker: Docker) -> Result<(), Error> {
                         name: String::from(*name),
                         version: String::from(*version),
                     })
-                    .delete(docker.clone())
-                    .await?
+                        .delete(docker.clone())
+                        .await?
                 }
                 _ => continue,
             };

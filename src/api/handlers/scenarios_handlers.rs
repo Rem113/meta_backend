@@ -1,11 +1,11 @@
 use mongodb::bson::{doc, oid::ObjectId};
 use warp::hyper;
 
-use crate::data::ScenarioDTO;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Repository, Scenario},
 };
+use crate::data::ScenarioDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let scenarios = repository.list::<Scenario>().await?;

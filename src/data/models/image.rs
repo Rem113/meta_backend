@@ -1,9 +1,9 @@
-use crate::data::repository::Document;
-
-use super::{serializers::serialize_option_object_id, Tag};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
+use crate::data::repository::Document;
+
+use super::{serializers::serialize_option_object_id, Tag};
 use super::Command;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

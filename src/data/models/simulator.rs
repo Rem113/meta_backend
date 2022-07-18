@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+
 use mongodb::bson::{doc, to_bson};
+use mongodb::bson::oid::ObjectId;
+use serde::{Deserialize, Serialize};
 
 use crate::data::repository::Document;
 
 use super::serializers::{serialize_object_id, serialize_option_object_id};
-use mongodb::bson::oid::ObjectId;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SimulatorDTO {

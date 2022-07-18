@@ -1,5 +1,6 @@
-use crate::data::models::LogMessage;
 use serde::{Deserialize, Serialize};
+
+use crate::data::models::LogMessage;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]

@@ -9,7 +9,7 @@ use crate::data::Repository;
 
 pub fn executions_routes(
     database: Arc<Database>,
-) -> impl Filter<Extract = (impl warp::reply::Reply,), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract=(impl warp::reply::Reply, ), Error=warp::Rejection> + Clone {
     let common = warp::path("executions").and(with_repository(database));
 
     common
@@ -21,6 +21,6 @@ pub fn executions_routes(
 
 fn with_repository(
     database: Arc<Database>,
-) -> impl Filter<Extract = (Repository,), Error = Infallible> + Clone {
+) -> impl Filter<Extract=(Repository, ), Error=Infallible> + Clone {
     warp::any().map(move || Repository::new(database.clone()))
 }

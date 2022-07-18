@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use bollard::{
+    Docker,
     image::{BuildImageOptions, ListImagesOptions, RemoveImageOptions},
     models::ImageSummary,
-    Docker,
 };
 use futures::TryStreamExt;
 

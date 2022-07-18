@@ -1,5 +1,5 @@
-use std::time::SystemTime;
 use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::time::SystemTime;
 
 use bollard::Docker;
 use chrono::DateTime;
@@ -10,11 +10,11 @@ use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
 use warp::ws::Message;
 
-use crate::data::{Execution, ScenarioPlayingEvent};
 use crate::{
     data::{Environment, Repository, Scenario, Simulator, Step},
     domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
 };
+use crate::data::{Execution, ScenarioPlayingEvent};
 
 use super::error::DomainError;
 
@@ -53,7 +53,7 @@ impl DockerScenarioExecutor {
             environment,
             tx.clone(),
         )
-        .await?;
+            .await?;
 
         let running_simulators = image_id_to_running_simulator
             .values()
@@ -228,7 +228,7 @@ async fn run_scenario(
                     step: i + 1,
                     message: response,
                 })
-                .ok();
+                    .ok();
             }
             Err(error) => {
                 if matches!(error, DomainError::SimulatorCommandFailed { .. }) {

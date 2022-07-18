@@ -2,8 +2,9 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
-use super::serializers::serialize_option_object_id;
 use crate::data::{repository::Document, Step, StepDTO};
+
+use super::serializers::serialize_option_object_id;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ScenarioDTO {

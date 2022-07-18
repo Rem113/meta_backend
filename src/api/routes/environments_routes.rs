@@ -1,7 +1,7 @@
-use bollard::Docker;
 use std::convert::Infallible;
 use std::sync::Arc;
 
+use bollard::Docker;
 use mongodb::Database;
 use tokio::sync::Mutex;
 use warp::Filter;

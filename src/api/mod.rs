@@ -16,7 +16,7 @@ mod routes;
 pub fn routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
-) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract=(impl warp::Reply, ), Error=warp::Rejection> + Clone {
     images_routes(Arc::clone(&database), Arc::clone(&docker))
         .or(environments_routes(Arc::clone(&database), docker))
         .or(scenarios_routes(Arc::clone(&database)))

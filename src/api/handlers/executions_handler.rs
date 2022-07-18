@@ -1,8 +1,8 @@
 use mongodb::bson::oid::ObjectId;
 use warp::hyper;
 
-use crate::data::{Execution, ExecutionDTO};
 use crate::{api::error_rejection::ErrorRejection, data::Repository};
+use crate::data::{Execution, ExecutionDTO};
 
 pub async fn find_by_id(
     repository: Repository,

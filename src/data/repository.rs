@@ -32,8 +32,8 @@ impl Repository {
     }
 
     pub async fn list<T>(&self) -> Result<Vec<T>, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 
@@ -43,8 +43,8 @@ impl Repository {
     }
 
     pub async fn create<T>(&self, document: T) -> Result<T, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection::<T>(T::collection_name());
 
@@ -56,8 +56,8 @@ impl Repository {
     }
 
     pub async fn find_by_id<T>(&self, id: &ObjectId) -> Result<Option<T>, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 
@@ -71,8 +71,8 @@ impl Repository {
         &self,
         document: mongodb::bson::Document,
     ) -> Result<Option<T>, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 
@@ -83,8 +83,8 @@ impl Repository {
     }
 
     pub async fn find<T>(&self, document: mongodb::bson::Document) -> Result<Vec<T>, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 
@@ -98,8 +98,8 @@ impl Repository {
         id: &ObjectId,
         document: mongodb::bson::Document,
     ) -> Result<T, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 
@@ -111,8 +111,8 @@ impl Repository {
     }
 
     pub async fn remove<T>(&self, id: &ObjectId) -> Result<T, DataError>
-    where
-        T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
+        where
+            T: Document + Unpin + Send + Sync + Serialize + DeserializeOwned,
     {
         let collection = self.database.collection(T::collection_name());
 

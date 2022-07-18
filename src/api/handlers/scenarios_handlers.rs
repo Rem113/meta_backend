@@ -1,11 +1,12 @@
+use chrono::format::Item::Error;
 use mongodb::bson::{doc, oid::ObjectId};
 use warp::hyper;
 
+use crate::data::ScenarioDTO;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Repository, Scenario},
 };
-use crate::data::ScenarioDTO;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let scenarios = repository.list::<Scenario>().await?;
@@ -56,7 +57,23 @@ pub async fn update(
     scenario_id: ObjectId,
     scenario: Scenario,
 ) -> Result<warp::reply::Json, warp::Rejection> {
-    match repository.update::<Scenario>(&scenario_id, scenario.into()).await {
+    match repository
+        .update::<Scenario>(&scenario_id, scenario.into())
+        .await
+    {
+        Ok(scenario) => Ok(warp::reply::json(&ScenarioDTO::from(scenario))),
+        Err(_) => Err(ErrorRejection::reject(
+            "Could not find scenario",
+            hyper::StatusCode::NOT_FOUND,
+        )),
+    }
+}
+
+pub async fn remove(
+    repository: Repository,
+    scenario_id: ObjectId,
+) -> Result<warp::reply::Json, warp::Rejection> {
+    match repository.remove::<Scenario>(&scenario_id).await {
         Ok(scenario) => Ok(warp::reply::json(&ScenarioDTO::from(scenario))),
         Err(_) => Err(ErrorRejection::reject(
             "Could not find scenario",

@@ -2,9 +2,12 @@ use std::{convert::Infallible, sync::Arc};
 
 use bollard::Docker;
 use mongodb::Database;
+use serde_json::json;
 use warp::Filter;
 
-use crate::api::routes::{environments_routes, executions_routes, images_routes, scenarios_routes, simulators_routes};
+use crate::api::routes::{
+    environments_routes, executions_routes, images_routes, scenarios_routes, simulators_routes,
+};
 
 use self::error_rejection::ErrorRejection;
 
@@ -16,7 +19,7 @@ mod routes;
 pub fn routes(
     database: Arc<Database>,
     docker: Arc<Docker>,
-) -> impl Filter<Extract=(impl warp::Reply, ), Error=warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     images_routes(Arc::clone(&database), Arc::clone(&docker))
         .or(environments_routes(Arc::clone(&database), docker))
         .or(scenarios_routes(Arc::clone(&database)))
@@ -36,7 +39,7 @@ pub async fn rejection_handler(
     };
 
     Ok(warp::reply::with_status(
-        warp::reply::json(&message),
+        warp::reply::json(&json!({ "message": message })),
         status,
     ))
 }

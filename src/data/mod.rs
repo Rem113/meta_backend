@@ -4,6 +4,6 @@ pub use models::{EnvironmentDTO, ExecutionDTO, ImageDTO, ScenarioDTO, SimulatorD
 pub use models::{LogMessage, ScenarioPlayingEvent};
 pub use repository::Repository;
 
-mod error;
+pub(crate) mod error;
 mod models;
 mod repository;

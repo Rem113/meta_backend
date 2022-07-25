@@ -8,12 +8,14 @@ use serde::Deserialize;
 use tokio::sync::Mutex;
 use warp::hyper;
 
+use crate::data::{
+    EnvironmentDTO, Execution, ExecutionDTO, Image, Scenario, Simulator, SimulatorDTO,
+};
+use crate::domain::DockerScenarioExecutor;
 use crate::{
     api::error_rejection::ErrorRejection,
     data::{Environment, Repository},
 };
-use crate::data::{EnvironmentDTO, Execution, ExecutionDTO, Image, Scenario, Simulator, SimulatorDTO};
-use crate::domain::DockerScenarioExecutor;
 
 pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rejection> {
     let environments = repository.list::<Environment>().await?;
@@ -29,7 +31,7 @@ pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rej
 pub async fn create(
     repository: Repository,
     environment: Environment,
-) -> Result<warp::reply::Json, warp::Rejection> {
+) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let already_existing_environment = repository
         .find::<Environment>(doc! {"name": environment.name()})
         .await?;
@@ -43,7 +45,10 @@ pub async fn create(
 
     let environment = repository.create(environment).await?;
 
-    Ok(warp::reply::json(&EnvironmentDTO::from(environment)))
+    Ok(warp::reply::with_status(
+        warp::reply::json(&EnvironmentDTO::from(environment)),
+        hyper::StatusCode::CREATED,
+    ))
 }
 
 pub async fn find_by_id(
@@ -128,8 +133,8 @@ pub async fn run_scenario_in_environment(
             repository,
             web_socket,
         )
-            .await
-            .ok();
+        .await
+        .ok();
     }))
 }
 
@@ -162,7 +167,7 @@ pub async fn add_simulator_for_environment(
     repository: Repository,
     environment_id: ObjectId,
     simulator_data: CreateSimulatorData,
-) -> Result<warp::reply::Json, warp::Rejection> {
+) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let simulators_for_environment = repository
         .find::<Simulator>(doc! {"environmentId": environment_id})
         .await?;
@@ -204,7 +209,10 @@ pub async fn add_simulator_for_environment(
 
             let simulator = repository.create(simulator).await?;
 
-            Ok(warp::reply::json(&SimulatorDTO::from(simulator)))
+            Ok(warp::reply::with_status(
+                warp::reply::json(&SimulatorDTO::from(simulator)),
+                hyper::StatusCode::CREATED,
+            ))
         }
         (None, None) => Err(ErrorRejection::reject(
             "Environment and image not found",

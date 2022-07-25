@@ -25,14 +25,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database = Arc::new(database);
 
     let cors = warp::cors()
-        .allow_any_origin()
+        .allow_origin("http://localhost:1234")
         .allow_methods(["GET", "POST", "PUT", "DELETE"])
         .allow_headers(["Content-Type"]);
     let api = warp::path("api")
         .and(api::routes(database, docker))
         .with(warp::trace::request())
-        .with(cors)
-        .recover(api::rejection_handler);
+        .recover(api::rejection_handler)
+        .with(cors);
 
     let address = SocketAddr::from_str("127.0.0.1:4000").expect("Could not parse address");
 

@@ -21,7 +21,7 @@ pub async fn list(repository: Repository) -> Result<warp::reply::Json, warp::Rej
 pub async fn create(
     repository: Repository,
     scenario: Scenario,
-) -> Result<warp::reply::Json, warp::Rejection> {
+) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let already_existing_scenario = repository
         .find::<Scenario>(doc! {"name": scenario.name() })
         .await?;
@@ -35,7 +35,10 @@ pub async fn create(
 
     let scenario = repository.create(scenario).await?;
 
-    Ok(warp::reply::json(&ScenarioDTO::from(scenario)))
+    Ok(warp::reply::with_status(
+        warp::reply::json(&ScenarioDTO::from(scenario)),
+        hyper::StatusCode::CREATED,
+    ))
 }
 
 pub async fn find_by_id(

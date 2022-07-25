@@ -27,7 +27,7 @@ pub async fn create(
     repository: Repository,
     docker: Arc<Docker>,
     form_data: FormData,
-) -> Result<warp::reply::Json, warp::Rejection> {
+) -> Result<impl warp::reply::Reply, warp::Rejection> {
     let mut parts: HashMap<String, Part> = form_data
         .map_ok(|part| (String::from(part.name()), part))
         .try_collect()
@@ -92,7 +92,10 @@ pub async fn create(
 
     let image = repository.create(image).await?;
 
-    Ok(warp::reply::json(&ImageDTO::from(image)))
+    Ok(warp::reply::with_status(
+        warp::reply::json(&ImageDTO::from(image)),
+        hyper::StatusCode::CREATED,
+    ))
 }
 
 async fn parse_part_to_image(image_data_part: Part) -> Result<Image, warp::Rejection> {

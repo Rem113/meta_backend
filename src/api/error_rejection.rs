@@ -1,7 +1,7 @@
 use warp::hyper;
 
 use crate::api::error::ApiError;
-use crate::data;
+use crate::data::error::DataError;
 
 #[derive(Debug)]
 pub struct ErrorRejection {
@@ -38,8 +38,8 @@ impl From<ApiError> for warp::Rejection {
     }
 }
 
-impl From<data::DataError> for warp::Rejection {
-    fn from(other: data::DataError) -> Self {
+impl From<DataError> for warp::Rejection {
+    fn from(other: DataError) -> Self {
         ErrorRejection::reject(&other.to_string(), hyper::StatusCode::INTERNAL_SERVER_ERROR)
     }
 }

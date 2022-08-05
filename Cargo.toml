@@ -12,6 +12,7 @@ chrono = "0.4.19"
 futures = "0.3.21"
 mongodb = "2.1.0"
 reqwest = { version = "0.11.10", features = ["json"] }
+scopeguard = "1.1.0"
 serde = "1.0.136"
 serde_json = "1.0.79"
 thiserror = "1.0.30"

@@ -1,20 +1,21 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
 use std::time::SystemTime;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bollard::Docker;
 use chrono::DateTime;
 use futures::{future::try_join_all, SinkExt};
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use scopeguard::defer;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tracing::{trace, warn};
 use warp::ws::Message;
 
+use crate::data::{Execution, ScenarioPlayingEvent};
 use crate::{
     data::{Environment, Repository, Scenario, Simulator, Step},
     domain::{docker_simulator::DockerSimulator, running_docker_simulator::RunningDockerSimulator},
 };
-use crate::data::{Execution, ScenarioPlayingEvent};
 
 use super::error::DomainError;
 
@@ -53,12 +54,24 @@ impl DockerScenarioExecutor {
             environment,
             tx.clone(),
         )
-            .await?;
+        .await?;
 
         let running_simulators = image_id_to_running_simulator
             .values()
             .cloned()
             .collect::<Vec<_>>();
+
+        defer! {
+            let running_simulators = running_simulators.clone();
+
+            tokio::spawn(async move {
+                for running_docker_simulator in running_simulators.clone() {
+                    if let Err(error) = running_docker_simulator.remove().await {
+                        warn!("Failed to remove simulator: {:?}", error);
+                    }
+                }
+            });
+        }
 
         wait_for_simulators_to_be_ready(running_simulators.clone(), tx.clone()).await?;
 
@@ -118,12 +131,6 @@ impl DockerScenarioExecutor {
                     .ok(),
                 _ => Some(()),
             };
-        }
-
-        for running_docker_simulator in running_simulators {
-            if let Err(error) = running_docker_simulator.remove().await {
-                warn!("Failed to remove simulator: {:?}", error);
-            }
         }
 
         Ok(())
@@ -228,7 +235,7 @@ async fn run_scenario(
                     step: i + 1,
                     message: response,
                 })
-                    .ok();
+                .ok();
             }
             Err(error) => {
                 if matches!(error, DomainError::SimulatorCommandFailed { .. }) {

@@ -4,7 +4,6 @@
 - [ ] Validate with JSON schema
 - [ ] Edit and delete images
 - [ ] Add test suites
-- [ ] Implement `scopeguard` when running scenarios
 - [ ] Stop running scenario
 - [ ] Edit and delete test suites
 - [ ] Change manager implementation

@@ -809,6 +809,7 @@ dependencies = [
  "futures",
  "mongodb",
  "reqwest",
+ "scopeguard",
  "serde",
  "serde_json",
  "thiserror",

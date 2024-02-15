@@ -36,6 +36,7 @@ impl DockerSimulator {
             .create_container(
                 Some(CreateContainerOptions {
                     name: &container_name,
+                    platform: None,
                 }),
                 Config {
                     attach_stdout: Some(true),

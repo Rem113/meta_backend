@@ -46,7 +46,7 @@ impl DockerSimulator {
                         port_bindings: Some(HashMap::from([(
                             String::from("3000/tcp"),
                             Some(vec![PortBinding {
-                                host_ip: Some(String::from("localhost")),
+                                host_ip: Some(String::from("127.0.0.1")),
                                 host_port: Some(format!("{}", simulator.port())),
                             }]),
                         )])),
